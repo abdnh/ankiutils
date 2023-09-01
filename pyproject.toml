@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ankiutils"
+authors = [{ name = "Abdo", email = "abdo@abdnh.net" }]
+description = "A collection of utilties for Anki add-on development"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+]
+dynamic = ["version", "dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements/base.txt"] }
+optional-dependencies.dev = { file = ["requirements/dev.txt"] }
+
+[tool.setuptools_scm]
+
+[project.urls]
+Repository = "https://github.com/abdnh/ankiutils"
