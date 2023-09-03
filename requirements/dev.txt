@@ -16,6 +16,8 @@ black==23.7.0
     # via -r requirements/dev.in
 blinker==1.6.2
     # via flask
+build==1.0.0
+    # via pip-tools
 certifi==2023.7.22
     # via requests
 cfgv==3.4.0
@@ -26,8 +28,10 @@ click==8.1.7
     # via
     #   black
     #   flask
+    #   pip-tools
 colorama==0.4.6
     # via
+    #   build
     #   click
     #   pylint
     #   pytest
@@ -55,6 +59,7 @@ idna==3.4
     # via requests
 importlib-metadata==6.8.0
     # via
+    #   build
     #   flask
     #   markdown
 iniconfig==2.0.0
@@ -94,9 +99,12 @@ orjson==3.9.5
 packaging==23.1
     # via
     #   black
+    #   build
     #   pytest
 pathspec==0.11.2
     # via black
+pip-tools==7.3.0
+    # via -r requirements/dev.in
 platformdirs==3.10.0
     # via
     #   black
@@ -115,6 +123,8 @@ psutil==5.9.5 ; sys_platform == "win32"
     #   aqt
 pylint==2.17.5
     # via -r requirements/dev.in
+pyproject-hooks==1.0.0
+    # via build
 pyqt6==6.5.2
     # via
     #   aqt
@@ -166,9 +176,12 @@ tokenize-rt==5.2.0
 tomli==2.0.1
     # via
     #   black
+    #   build
     #   coverage
     #   mypy
+    #   pip-tools
     #   pylint
+    #   pyproject-hooks
     #   pytest
 tomlkit==0.12.1
     # via pylint
@@ -187,11 +200,17 @@ waitress==2.1.2
     # via aqt
 werkzeug==2.3.7
     # via flask
+wheel==0.41.2
+    # via pip-tools
 wrapt==1.15.0
     # via astroid
 zipp==3.16.2
     # via importlib-metadata
 
 # The following packages are considered to be unsafe in a requirements file:
+pip==23.2.1
+    # via pip-tools
 setuptools==68.1.2
-    # via nodeenv
+    # via
+    #   nodeenv
+    #   pip-tools
