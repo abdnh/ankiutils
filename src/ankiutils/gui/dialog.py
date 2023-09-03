@@ -1,9 +1,8 @@
-import typing
+from typing import Optional
 
+from aqt import mw
 from aqt.qt import *
 from aqt.utils import restoreGeom, saveGeom
-
-from ..config import ADDON_MODULE
 
 
 class Dialog(QDialog):
@@ -11,15 +10,17 @@ class Dialog(QDialog):
 
     def __init__(
         self,
-        parent: typing.Optional[QWidget],
+        module: str,
+        parent: Optional[QWidget] = None,
         flags: Qt.WindowType = Qt.WindowType.Dialog,
     ) -> None:
         super().__init__(parent, flags)
+        self._addon = mw.addonManager.addonFromModule(module)
         self.setup_ui()
 
     def setup_ui(self) -> None:
-        restoreGeom(self, f"{ADDON_MODULE}_{self.key}")
+        restoreGeom(self, f"{self._addon}_{self.key}")
 
     def closeEvent(self, event: QCloseEvent) -> None:
-        saveGeom(self, f"{ADDON_MODULE}_{self.key}")
+        saveGeom(self, f"{self._addon}_{self.key}")
         return super().closeEvent(event)
