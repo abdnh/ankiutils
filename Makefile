@@ -1,4 +1,4 @@
-.PHONY: fix mypy pylint test
+.PHONY: fix mypy pylint test compile_reqs
 
 fix:
 	python -m black src tests
@@ -12,3 +12,6 @@ pylint:
 
 test:
 	python -m  pytest --cov=src --cov-config=.coveragerc
+
+compile_reqs:
+	pip-compile --resolver=backtracking --allow-unsafe --no-header --strip-extras --upgrade $(FILE)

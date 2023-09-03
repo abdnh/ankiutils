@@ -51,14 +51,14 @@ repos:
             require_serial: true
           - id: pip-compile
             name: pip-compile base
-            entry: pip-compile requirements/base.in
+            entry: make compile_reqs FILE=requirements/base.in
             language: system
             files: ^(requirements/base\.(in|txt))$
             pass_filenames: false
             require_serial: true
           - id: pip-compile
             name: pip-compile dev
-            entry: pip-compile requirements/dev.in
+            entry: make compile_reqs FILE=requirements/dev.in
             language: system
             files: ^(requirements/dev\.(in|txt))$
             pass_filenames: false
