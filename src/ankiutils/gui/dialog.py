@@ -15,12 +15,12 @@ class Dialog(QDialog):
         flags: Qt.WindowType = Qt.WindowType.Dialog,
     ) -> None:
         super().__init__(parent, flags)
+        qconnect(self.finished, self._on_finished)
         self._addon = mw.addonManager.addonFromModule(module)
         self.setup_ui()
 
     def setup_ui(self) -> None:
         restoreGeom(self, f"{self._addon}_{self.key}")
 
-    def closeEvent(self, event: QCloseEvent) -> None:
+    def _on_finished(self) -> None:
         saveGeom(self, f"{self._addon}_{self.key}")
-        return super().closeEvent(event)
