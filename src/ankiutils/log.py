@@ -35,14 +35,17 @@ def get_logger(module: str) -> logging.Logger:
     logger.addHandler(file_handler)
 
     # Prevent errors when deleting/updating the add-on on Windows
-    def on_addon_manager_will_delete_addon(
+    def close_log_file(
         manager: AddonManager, m: str, *args: Any, **kwargs: Any
     ) -> None:
         if m == addon:
             file_handler.close()
 
     AddonManager.deleteAddon = wrap(  # type: ignore[method-assign]
-        AddonManager.deleteAddon, on_addon_manager_will_delete_addon, "before"
+        AddonManager.deleteAddon, close_log_file, "before"
+    )
+    AddonManager.backupUserFiles = wrap(  # type: ignore[method-assign]
+        AddonManager.backupUserFiles, close_log_file, "before"
     )
 
     return logger
