@@ -15,13 +15,13 @@ def get_logger(module: str) -> logging.Logger:
     logger = logging.getLogger(addon)
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
 
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_handler.setLevel(logging.DEBUG if "ANKIDEV" in os.environ else logging.INFO)
-    stdout_handler.setFormatter(formatter)
+    stdout_formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    stdout_handler.setFormatter(stdout_formatter)
     logger.addHandler(stdout_handler)
 
     logs_dir = Path(mw.addonManager.addonsFolder(addon)) / "user_files" / "logs"
@@ -30,7 +30,8 @@ def get_logger(module: str) -> logging.Logger:
     file_handler = RotatingFileHandler(
         log_path, "a", encoding="utf-8", maxBytes=3 * 1024 * 1024, backupCount=5
     )
-    file_handler.setFormatter(formatter)
+    file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(file_formatter)
     logger.addHandler(file_handler)
 
     # Prevent errors when deleting/updating the add-on on Windows
