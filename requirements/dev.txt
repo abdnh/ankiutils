@@ -195,7 +195,7 @@ virtualenv==20.25.0
     # via pre-commit
 waitress==3.0.0
     # via aqt
-werkzeug==3.0.1
+werkzeug==3.0.3
     # via flask
 wheel==0.42.0
     # via pip-tools
