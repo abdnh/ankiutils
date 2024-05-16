@@ -1,5 +1,6 @@
 from typing import Optional
 
+from anki.utils import pointVersion
 from aqt import mw
 from aqt.qt import *
 from aqt.utils import restoreGeom, saveGeom
@@ -7,6 +8,7 @@ from aqt.utils import restoreGeom, saveGeom
 
 class Dialog(QDialog):
     key: str = ""
+    default_size: Optional[tuple[int, int]] = None
 
     def __init__(
         self,
@@ -20,7 +22,12 @@ class Dialog(QDialog):
         self.setup_ui()
 
     def setup_ui(self) -> None:
-        restoreGeom(self, f"{self._addon}_{self.key}")
+        if pointVersion() >= 55:
+            restoreGeom(
+                self, f"{self._addon}_{self.key}", default_size=self.default_size
+            )
+        else:
+            restoreGeom(self, f"{self._addon}_{self.key}")
 
     def _on_finished(self) -> None:
         saveGeom(self, f"{self._addon}_{self.key}")
