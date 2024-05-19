@@ -175,7 +175,7 @@ rpds-py==0.18.1
     #   referencing
 send2trash==1.8.3
     # via aqt
-sentry-sdk==1.6.0
+sentry-sdk==1.14.0
     # via -r requirements\base.in
 soupsieve==2.5
     # via beautifulsoup4

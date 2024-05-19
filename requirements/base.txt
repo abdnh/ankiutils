@@ -1,6 +1,6 @@
 certifi==2024.2.2
     # via sentry-sdk
-sentry-sdk==1.6.0
-    # via -r requirements/base.in
+sentry-sdk==1.14.0
+    # via -r base.in
 urllib3==2.2.1
     # via sentry-sdk
