@@ -106,7 +106,7 @@ def report_exception_and_upload_logs(
     sentry_id = _report_exception(
         exception=exception,
         args=args,
-        context={**context, "logs": {"url": _upload_logs(args)}},
+        context={**context, "logs": _upload_logs(args)},
     )
 
     return sentry_id
@@ -239,7 +239,7 @@ def _obsolete_version_of_sentry_sdk() -> bool:
     return result
 
 
-def _upload_logs(args: _ErrorReportingArgs) -> str | None:
+def _upload_logs(args: _ErrorReportingArgs) -> dict[str, str] | None:
     addon = args.consts.module
     if not log_file_path(addon).exists():
         return None
@@ -247,7 +247,7 @@ def _upload_logs(args: _ErrorReportingArgs) -> str | None:
     path = log_file_path(addon)
     name = f"{addon}_{checksum(path.read_text(encoding='utf-8'))}.log"
     try:
-        return upload_file(path, name)
+        return {"url": upload_file(path, name), "filename": name}
     except Exception as exc:
         _report_exception(exc, args, {})
         return None
