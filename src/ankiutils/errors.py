@@ -132,19 +132,17 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
                 "The exception handler threw an exception.", exc_info=exc
             )
         finally:
-            if handled:
-                return  # pylint: disable=lost-exception
+            if not handled:
+                if _this_addon_mentioned_in_tb(tb, args):
+                    try:
+                        _maybe_report_exception(exception=val, args=args)
+                    except Exception as e:
+                        args.logger.warning(
+                            "There was an error while reporting the exception or showing the feedback dialog.",
+                            exc_info=e,
+                        )
 
-            if _this_addon_mentioned_in_tb(tb, args):
-                try:
-                    _maybe_report_exception(exception=val, args=args)
-                except Exception as e:
-                    args.logger.warning(
-                        "There was an error while reporting the exception or showing the feedback dialog.",
-                        exc_info=e,
-                    )
-
-            original_excepthook(etype, val, tb)  # pylint: disable=lost-exception
+                original_excepthook(etype, val, tb)  # pylint: disable=lost-exception
 
     original_excepthook = sys.excepthook
     sys.excepthook = excepthook
