@@ -39,3 +39,6 @@ class Config:
 
     def get_default(self, key: str) -> Any:
         return self._defaults.get(key, None)
+
+    def asdict(self) -> dict[str, Any]:
+        return self._config.copy()

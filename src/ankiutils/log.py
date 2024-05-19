@@ -12,6 +12,12 @@ from aqt.addons import AddonManager
 from ._internal import is_testing
 
 
+def log_file_path(addon: str) -> Path:
+    logs_dir = Path(mw.addonManager.addonsFolder(addon)) / "user_files" / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    return logs_dir / f"{addon}.log"
+
+
 def get_logger(module: str) -> logging.Logger:
     if is_testing():
         logger = logging.getLogger("addon")
@@ -37,11 +43,13 @@ def get_logger(module: str) -> logging.Logger:
             file_handler.close()
 
     if not is_testing():
-        logs_dir = Path(mw.addonManager.addonsFolder(addon)) / "user_files" / "logs"
-        logs_dir.mkdir(parents=True, exist_ok=True)
-        log_path = os.path.join(logs_dir, f"{addon}.log")
+        log_path = log_file_path(addon)
         file_handler = RotatingFileHandler(
-            log_path, "a", encoding="utf-8", maxBytes=3 * 1024 * 1024, backupCount=5
+            str(log_path),
+            "a",
+            encoding="utf-8",
+            maxBytes=3 * 1024 * 1024,
+            backupCount=5,
         )
         file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(file_formatter)

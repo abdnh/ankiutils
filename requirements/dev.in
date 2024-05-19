@@ -12,3 +12,4 @@ pyupgrade
 pytest
 pytest-cov
 pre-commit
+types-requests

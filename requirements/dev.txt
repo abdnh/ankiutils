@@ -19,7 +19,9 @@ blinker==1.8.2
 build==1.2.1
     # via pip-tools
 certifi==2024.2.2
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
 cfgv==3.4.0
     # via pre-commit
 charset-normalizer==3.3.2
@@ -36,7 +38,9 @@ colorama==0.4.6
     #   pylint
     #   pytest
 coverage==7.5.1
-    # via pytest-cov
+    # via
+    #   coverage
+    #   pytest-cov
 decorator==5.1.1
     # via anki
 dill==0.3.8
@@ -121,7 +125,7 @@ psutil==5.9.8 ; sys_platform == "win32"
     #   -r requirements/dev.in
     #   anki
     #   aqt
-pylint==3.2.0
+pylint==3.2.1
     # via -r requirements/dev.in
 pyproject-hooks==1.1.0
     # via
@@ -171,6 +175,8 @@ rpds-py==0.18.1
     #   referencing
 send2trash==1.8.3
     # via aqt
+sentry-sdk==1.6.0
+    # via -r requirements\base.in
 soupsieve==2.5
     # via beautifulsoup4
 tokenize-rt==5.2.0
@@ -186,6 +192,8 @@ tomli==2.0.1
     #   pytest
 tomlkit==0.12.5
     # via pylint
+types-requests==2.31.0.20240406
+    # via -r requirements/dev.in
 typing-extensions==4.11.0
     # via
     #   astroid
@@ -193,7 +201,10 @@ typing-extensions==4.11.0
     #   mypy
     #   pylint
 urllib3==2.2.1
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
+    #   types-requests
 virtualenv==20.26.2
     # via pre-commit
 waitress==3.0.0
