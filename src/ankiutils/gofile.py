@@ -9,7 +9,7 @@ import requests
 from ._gofile_api_key import get_gofile_api_key
 
 API_URL = "https://api.gofile.io"
-LOGS_FOLDER_ID = "ad2e9b6a-134a-4976-a824-5b6a9c9beedc"
+LOGS_FOLDER_ID = "59e5ae0b-9c62-44f5-89e8-62f60777d7c4"
 TIMEOUT = 20
 
 
