@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import sys
@@ -35,11 +37,13 @@ def get_logger(module: str) -> logging.Logger:
     stdout_handler.setFormatter(stdout_formatter)
     logger.addHandler(stdout_handler)
 
+    file_handler: RotatingFileHandler | None = None
+
     # Prevent errors when deleting/updating the add-on on Windows
     def close_log_file(
         manager: AddonManager, m: str, *args: Any, **kwargs: Any
     ) -> None:
-        if m == addon:
+        if m == addon and file_handler:
             file_handler.close()
 
     if not is_testing():
