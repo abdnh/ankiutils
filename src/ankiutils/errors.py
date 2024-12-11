@@ -90,7 +90,7 @@ def _before_send(
     return event
 
 
-def report_exception_and_upload_logs(
+def _report_exception_and_upload_logs(
     exception: BaseException,
     args: _ErrorReportingArgs,
     context: dict[str, Any] | None = None,
@@ -110,6 +110,17 @@ def report_exception_and_upload_logs(
     )
 
     return sentry_id
+
+
+def report_exception_and_upload_logs(
+    exception: BaseException,
+    consts: AddonConsts,
+    config: Config,
+    logger: logging.Logger,
+) -> str | None:
+    return _report_exception_and_upload_logs(
+        exception, _ErrorReportingArgs(consts=consts, config=config, logger=logger)
+    )
 
 
 def _setup_excepthook(args: _ErrorReportingArgs) -> None:
@@ -153,7 +164,7 @@ def _maybe_report_exception(
 ) -> str | None:
     sentry_event_id: str | None = None
     if _error_reporting_enabled(args):
-        sentry_event_id = report_exception_and_upload_logs(
+        sentry_event_id = _report_exception_and_upload_logs(
             exception=exception, args=args
         )
     # TODO: maybe set our own error dialog here
