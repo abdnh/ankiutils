@@ -42,27 +42,32 @@ ExceptionCallback = Callable[
 ]
 exception_callbacks: list[ExceptionCallback] = []
 
+DEFAULT_SENTRY_DSN = "https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408.ingest.us.sentry.io/4507277391036416"
+
 
 def setup_error_handler(
-    consts: AddonConsts, config: Config, logger: logging.Logger
+    consts: AddonConsts,
+    config: Config,
+    logger: logging.Logger,
+    sentry_dsn: str | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
     args = _ErrorReportingArgs(consts=consts, config=config, logger=logger)
     _setup_excepthook(args)
     if _error_reporting_enabled(args):
-        _initialize_sentry(args)
+        _initialize_sentry(args, sentry_dsn)
 
 
 def register_exception_callback(callback: ExceptionCallback) -> None:
     exception_callbacks.append(callback)
 
 
-def _initialize_sentry(args: _ErrorReportingArgs) -> None:
+def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> None:
     os.environ["SENTRY_RELEASE"] = args.consts.version
 
     sentry_sdk.init(
-        dsn="https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408.ingest.us.sentry.io/4507277391036416",
+        dsn=dsn or DEFAULT_SENTRY_DSN,
         traces_sample_rate=1.0,
         release=args.consts.version,
         default_integrations=False,
