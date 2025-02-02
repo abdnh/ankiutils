@@ -53,7 +53,7 @@ def upload_file(path: str | Path, name: str) -> str:
             files={"file": file.read()},
             data={"folderId": LOGS_FOLDER_ID},
         ).json()["data"]
-        file_id = upload_data["fileId"]
+        file_id = upload_data["id"]
         _api_request(
             method="put",
             path=f"contents/{file_id}/update",
