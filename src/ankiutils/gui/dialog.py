@@ -18,6 +18,8 @@ class Dialog(QDialog):
     ) -> None:
         super().__init__(parent, flags)
         qconnect(self.finished, self._on_finished)
+        if hasattr(mw, "garbage_collect_on_dialog_finish"):
+            mw.garbage_collect_on_dialog_finish(self)
         self._addon = mw.addonManager.addonFromModule(module)
         self.setup_ui()
 
