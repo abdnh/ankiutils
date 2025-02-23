@@ -159,7 +159,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
             )
         finally:
             if handled:
-                return  # pylint: disable=lost-exception
+                return  # pylint: disable=lost-exception, return-in-finally
 
             if _this_addon_mentioned_in_tb(tb, args):
                 try:
