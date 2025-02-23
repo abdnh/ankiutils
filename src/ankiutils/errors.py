@@ -35,7 +35,7 @@ class _ErrorReportingArgs:
     consts: AddonConsts
     config: Config
     logger: logging.Logger
-    on_exception_handled: Callable[[BaseException, str | None], None] | None
+    on_handle_exception: Callable[[BaseException, str | None], None] | None
 
 
 ExceptionCallback = Callable[
@@ -51,7 +51,7 @@ def setup_error_handler(
     config: Config,
     logger: logging.Logger,
     sentry_dsn: str | None = None,
-    on_exception_handled: Callable[[BaseException, str], None] | None = None,
+    on_handle_exception: Callable[[BaseException, str], None] | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
@@ -59,7 +59,7 @@ def setup_error_handler(
         consts=consts,
         config=config,
         logger=logger,
-        on_exception_handled=on_exception_handled,
+        on_handle_exception=on_handle_exception,
     )
     _setup_excepthook(args)
     if _error_reporting_enabled(args):
@@ -133,7 +133,7 @@ def report_exception_and_upload_logs(
     return _report_exception_and_upload_logs(
         exception,
         _ErrorReportingArgs(
-            consts=consts, config=config, logger=logger, on_exception_handled=None
+            consts=consts, config=config, logger=logger, on_handle_exception=None
         ),
     )
 
@@ -169,7 +169,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
                         "There was an error while reporting the exception or showing the feedback dialog.",
                         exc_info=e,
                     )
-            elif not args.on_exception_handled:
+            elif not args.on_handle_exception:
                 original_excepthook(etype, val, tb)  # pylint: disable=lost-exception
 
     original_excepthook = sys.excepthook
@@ -185,8 +185,8 @@ def _maybe_report_exception(
             exception=exception, args=args
         )
     # TODO: maybe set our own error dialog here
-    if args.on_exception_handled:
-        args.on_exception_handled(exception, sentry_event_id)
+    if args.on_handle_exception:
+        args.on_handle_exception(exception, sentry_event_id)
     return sentry_event_id
 
 
