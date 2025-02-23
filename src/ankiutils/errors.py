@@ -51,7 +51,7 @@ def setup_error_handler(
     config: Config,
     logger: logging.Logger,
     sentry_dsn: str | None = None,
-    on_handle_exception: Callable[[BaseException, str], None] | None = None,
+    on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
