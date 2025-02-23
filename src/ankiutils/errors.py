@@ -35,6 +35,7 @@ class _ErrorReportingArgs:
     consts: AddonConsts
     config: Config
     logger: logging.Logger
+    on_exception_handled: Callable[[BaseException, str | None], None] | None
 
 
 ExceptionCallback = Callable[
@@ -50,10 +51,16 @@ def setup_error_handler(
     config: Config,
     logger: logging.Logger,
     sentry_dsn: str | None = None,
+    on_exception_handled: Callable[[BaseException, str], None] | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
-    args = _ErrorReportingArgs(consts=consts, config=config, logger=logger)
+    args = _ErrorReportingArgs(
+        consts=consts,
+        config=config,
+        logger=logger,
+        on_exception_handled=on_exception_handled,
+    )
     _setup_excepthook(args)
     if _error_reporting_enabled(args):
         _initialize_sentry(args, sentry_dsn)
@@ -124,7 +131,10 @@ def report_exception_and_upload_logs(
     logger: logging.Logger,
 ) -> str | None:
     return _report_exception_and_upload_logs(
-        exception, _ErrorReportingArgs(consts=consts, config=config, logger=logger)
+        exception,
+        _ErrorReportingArgs(
+            consts=consts, config=config, logger=logger, on_exception_handled=None
+        ),
     )
 
 
@@ -173,6 +183,8 @@ def _maybe_report_exception(
             exception=exception, args=args
         )
     # TODO: maybe set our own error dialog here
+    if args.on_exception_handled:
+        args.on_exception_handled(exception, sentry_event_id)
     return sentry_event_id
 
 
