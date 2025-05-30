@@ -1,5 +1,9 @@
+from __future__ import annotations
+
+import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from aqt import mw
 
@@ -19,12 +23,23 @@ def _read_version(addon_dir: Path) -> str:
         return f.read().strip()
 
 
+def read_manifest(addon_dir: Path) -> dict[str, Any]:
+    with open(addon_dir / "manifest.json", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def _get_manifest_name(addon_dir: Path) -> str | None:
+    try:
+        return read_manifest(addon_dir)["name"]
+    except Exception:
+        return None
+
+
 def get_consts(module: str) -> AddonConsts:
     if is_testing():
-        # TODO: test
         return AddonConsts("addon", "addon", Path.cwd() / "src", "0.0.1")
     meta = mw.addonManager.addon_meta(mw.addonManager.addonFromModule(module))
-    name = meta.human_name()
     module = meta.dir_name
-    dir = Path(mw.addonManager.addonsFolder(module))
-    return AddonConsts(name, module, dir, _read_version(dir))
+    addon_dir = Path(mw.addonManager.addonsFolder(module))
+    name = _get_manifest_name(addon_dir) or meta.human_name()
+    return AddonConsts(name, module, addon_dir, _read_version(addon_dir))
