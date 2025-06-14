@@ -23,6 +23,7 @@ from sentry_sdk.integrations.dedupe import DedupeIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.stdlib import StdlibIntegration
 from sentry_sdk.integrations.threading import ThreadingIntegration
+from sentry_sdk.scope import Scope
 
 from .config import Config
 from .consts import AddonConsts
@@ -36,6 +37,7 @@ class _ErrorReportingArgs:
     config: Config
     logger: logging.Logger
     on_handle_exception: Callable[[BaseException, str | None], None] | None
+    on_sentry_scope: Callable[[Scope], None] | None
 
 
 ExceptionCallback = Callable[
@@ -46,12 +48,14 @@ exception_callbacks: list[ExceptionCallback] = []
 DEFAULT_SENTRY_DSN = "https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408.ingest.us.sentry.io/4507277391036416"
 
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def setup_error_handler(
     consts: AddonConsts,
     config: Config,
     logger: logging.Logger,
     sentry_dsn: str | None = None,
     on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
+    on_sentry_scope: Callable[[Scope], None] | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
@@ -60,6 +64,7 @@ def setup_error_handler(
         config=config,
         logger=logger,
         on_handle_exception=on_handle_exception,
+        on_sentry_scope=on_sentry_scope,
     )
     _setup_excepthook(args)
     if _error_reporting_enabled(args):
@@ -129,11 +134,16 @@ def report_exception_and_upload_logs(
     consts: AddonConsts,
     config: Config,
     logger: logging.Logger,
+    on_sentry_scope: Callable[[Scope], None] | None = None,
 ) -> str | None:
     return _report_exception_and_upload_logs(
         exception,
         _ErrorReportingArgs(
-            consts=consts, config=config, logger=logger, on_handle_exception=None
+            consts=consts,
+            config=config,
+            logger=logger,
+            on_handle_exception=None,
+            on_sentry_scope=on_sentry_scope,
         ),
     )
 
@@ -245,6 +255,9 @@ def _report_exception(
             )
         else:
             args.logger.warning("Exception has no traceback.")
+
+        if args.on_sentry_scope:
+            args.on_sentry_scope(scope)
 
         sentry_id = capture_exception(exception)
 
