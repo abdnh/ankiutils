@@ -48,8 +48,7 @@ exception_callbacks: list[ExceptionCallback] = []
 DEFAULT_SENTRY_DSN = "https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408.ingest.us.sentry.io/4507277391036416"
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
-def setup_error_handler(
+def setup_error_handler(  # noqa: PLR0913
     consts: AddonConsts,
     config: Config,
     logger: logging.Logger,
@@ -90,7 +89,8 @@ def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> Non
             StdlibIntegration(),
             ThreadingIntegration(),
         ],
-        # This disable the AtexitIntegration because it causes a RuntimeError when Anki is closed.
+        # This disable the AtexitIntegration because
+        # it causes a RuntimeError when Anki is closed.
         shutdown_timeout=0,
         before_send=lambda event, hint: _before_send(args, event, hint),
     )
@@ -99,7 +99,8 @@ def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> Non
 def _before_send(
     args: _ErrorReportingArgs, event: Any, hint: dict[str, Any]
 ) -> Any | None:
-    """Filter out events created by the LoggingIntegration that are not related to this add-on."""
+    """Filter out events created by the LoggingIntegration
+    that are not related to this add-on."""
     if "log_record" in hint:
         logger_name = hint["log_record"].name
         if logger_name != args.logger.name:
@@ -150,10 +151,12 @@ def report_exception_and_upload_logs(
 
 def _setup_excepthook(args: _ErrorReportingArgs) -> None:
     """Set up centralized exception handling.
-    Exceptions are are either handled by our exception handler or passed to the original excepthook
-    which opens Anki's error dialog.
-    If error reporting is enabled, unhandled exceptions (in which this add-on is involved)
-    are reported to Sentry and the user is prompted to provide feedback (in addition to Anki's error dialog opening).
+    Exceptions are are either handled by our exception handler
+    or passed to the original excepthook which opens Anki's error dialog.
+    If error reporting is enabled, unhandled exceptions
+    (in which this add-on is involved)
+    are reported to Sentry and the user is prompted to provide feedback
+    (in addition to Anki's error dialog opening).
     """
 
     def excepthook(
@@ -176,7 +179,8 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
                     _maybe_report_exception(exception=val, args=args)
                 except Exception as e:
                     args.logger.warning(
-                        "There was an error while reporting the exception or showing the feedback dialog.",
+                        "There was an error while reporting the exception "
+                        "or showing the feedback dialog.",
                         exc_info=e,
                     )
             elif not args.on_handle_exception:
@@ -206,9 +210,11 @@ def _try_handle_exception(
     exc_value: BaseException,
     tb: TracebackType | None,
 ) -> bool:
-    """Try to handle the exception. Return True if the exception was handled, False otherwise."""
+    """Try to handle the exception. Return True if the exception was handled,
+    False otherwise."""
     args.logger.info(
-        f"From _try_handle_exception:\n{''.join(traceback.format_exception(exc_type, value=exc_value, tb=tb))}"
+        "From _try_handle_exception:\n"
+        + "".join(traceback.format_exception(exc_type, value=exc_value, tb=tb))
     )
 
     for callback in exception_callbacks:

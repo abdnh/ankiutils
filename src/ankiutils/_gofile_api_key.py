@@ -1,3 +1,5 @@
+# ruff: noqa
+
 a = "7"
 b = "y"
 c = "j"

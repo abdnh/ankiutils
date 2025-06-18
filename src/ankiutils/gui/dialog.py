@@ -2,7 +2,7 @@ from typing import Optional
 
 from anki.utils import pointVersion
 from aqt import mw
-from aqt.qt import *
+from aqt.qt import QDialog, Qt, QWidget, qconnect
 from aqt.utils import restoreGeom, saveGeom
 
 
