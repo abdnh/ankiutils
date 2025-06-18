@@ -25,6 +25,8 @@ dev = [
     "types-requests",
 ]
 
+[tool.setuptools_scm]
+
 [project.urls]
 Repository = "https://github.com/abdnh/ankiutils"
 
