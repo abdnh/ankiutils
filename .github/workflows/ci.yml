@@ -27,9 +27,6 @@ jobs:
             - name: Install dependencies
               run: .github/workflows/install_deps.sh
 
-            - name: Build
-              run: make vendor && make
-
             - name: Run checks
               run: uv run -- pre-commit run --all-files
 
