@@ -1,6 +1,6 @@
 __pycache__/
 *.egg-info/
-venv/
+.venv/
 .mypy_cache/
 .pytest_cache/
 htmlcov/

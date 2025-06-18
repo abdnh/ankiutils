@@ -7,17 +7,27 @@ name = "ankiutils"
 authors = [{ name = "Abdo", email = "abdo@abdnh.net" }]
 description = "A collection of utilties for Anki add-on development"
 readme = "README.md"
+requires-python = ">=3.9"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
 ]
-dynamic = ["version", "dependencies", "optional-dependencies"]
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements/base.txt"] }
-optional-dependencies.dev = { file = ["requirements/dev.txt"] }
-
-[tool.setuptools_scm]
+dynamic = ["version"]
+dependencies = ["sentry-sdk"]
+[dependency-groups]
+dev = [
+    "aqt",
+    "mypy",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "types-requests",
+]
 
 [project.urls]
 Repository = "https://github.com/abdnh/ankiutils"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "PL", "TRY"]
+ignore = ["PLW0603", "PLR2004"]
