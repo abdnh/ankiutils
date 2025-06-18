@@ -1,9 +1,9 @@
 {
     "recommendations": [
         "ms-python.python",
-        "ms-python.pylint",
-        "ms-python.black-formatter",
-        "ms-python.isort",
-        "matangover.mypy"
+        "matangover.mypy",
+        "charliermarsh.ruff",
+        "dprint.dprint",
+        "abdo.ankiwebify"
     ]
 }

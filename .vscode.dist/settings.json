@@ -1,9 +1,13 @@
 {
+    "[html]": {
+        "editor.formatOnSave": false
+    },
+    "editor.defaultFormatter": "dprint.dprint",
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter"
+        "editor.defaultFormatter": "charliermarsh.ruff"
     },
     "editor.codeActionsOnSave": {
-        "source.organizeImports": true
+        "source.organizeImports": "explicit"
     },
     "editor.formatOnSave": true
 }
