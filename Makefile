@@ -1,17 +1,24 @@
-.PHONY: fix mypy pylint test compile_reqs
+.PHONY: all ruff-format ruff-check ruff-fix fix mypy lint test
 
-fix:
-	python -m black src tests
-	python -m isort src tests
+all: lint mypy test
+
+UV_RUN = uv run --
+
+ruff-format:
+	$(UV_RUN) pre-commit run -a ruff-format
+
+ruff-check:
+	$(UV_RUN) ruff check
+
+ruff-fix:
+	$(UV_RUN) pre-commit run -a ruff-check
+
+fix: ruff-format ruff-fix
 
 mypy:
-	python -m mypy src tests
+	-$(UV_RUN) pre-commit run -a mypy
 
-pylint:
-	python -m pylint src tests
+lint: mypy ruff-check
 
 test:
-	python -m  pytest --cov=src --cov-config=.coveragerc
-
-compile_reqs:
-	pip-compile --resolver=backtracking --allow-unsafe --no-header --strip-extras --upgrade $(FILE)
+	$(UV_RUN) python -m  pytest --cov=src --cov-config=.coveragerc
