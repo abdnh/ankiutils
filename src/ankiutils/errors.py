@@ -17,7 +17,7 @@ from typing import Any, Callable, Optional
 
 import sentry_sdk
 from anki.utils import checksum, pointVersion
-from sentry_sdk import capture_exception, new_scope
+from sentry_sdk import capture_exception, push_scope
 from sentry_sdk.integrations.argv import ArgvIntegration
 from sentry_sdk.integrations.dedupe import DedupeIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -243,7 +243,7 @@ def _report_exception(
     if not _error_reporting_enabled(args):
         return None
 
-    with new_scope() as scope:
+    with push_scope() as scope:
         scope.set_level("error")
         scope.set_tag("os", sys.platform)
         scope.set_tag("add-on", args.consts.module)
