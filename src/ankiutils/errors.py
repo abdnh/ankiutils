@@ -7,6 +7,7 @@ Credit: Adapted from the AnkiHub add-on.
 from __future__ import annotations
 
 import dataclasses
+import functools
 import logging
 import os
 import re
@@ -149,6 +150,45 @@ def report_exception_and_upload_logs(
     )
 
 
+def _report_exception_and_upload_logs_in_background(
+    exception: BaseException,
+    args: _ErrorReportingArgs,
+    on_done: Callable[[str | None], None] | None = None,
+) -> None:
+    from aqt import mw  # noqa: PLC0415
+
+    mw.taskman.with_progress(
+        functools.partial(
+            _report_exception_and_upload_logs,
+            exception,
+            args,
+        ),
+        on_done=lambda f: on_done(f.result()) if on_done else None,
+        label="Reporting error...",
+    )
+
+
+def report_exception_and_upload_logs_in_background(
+    exception: BaseException,
+    consts: AddonConsts,
+    config: Config,
+    logger: logging.Logger,
+    on_sentry_scope: Callable[[Scope], None] | None = None,
+    on_done: Callable[[str | None], None] | None = None,
+) -> None:
+    _report_exception_and_upload_logs_in_background(
+        exception,
+        _ErrorReportingArgs(
+            consts=consts,
+            config=config,
+            logger=logger,
+            on_handle_exception=None,
+            on_sentry_scope=on_sentry_scope,
+        ),
+        on_done=on_done,
+    )
+
+
 def _setup_excepthook(args: _ErrorReportingArgs) -> None:
     """Set up centralized exception handling.
     Exceptions are are either handled by our exception handler
@@ -192,16 +232,23 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
 
 def _maybe_report_exception(
     exception: BaseException, args: _ErrorReportingArgs
-) -> str | None:
-    sentry_event_id: str | None = None
+) -> None:
     if _error_reporting_enabled(args):
-        sentry_event_id = _report_exception_and_upload_logs(
-            exception=exception, args=args
+
+        def on_done(sentry_event_id: str | None) -> None:
+            # TODO: maybe set our own error dialog here
+            if args.on_handle_exception:
+                from aqt import mw  # noqa: PLC0415
+
+                mw.taskman.run_on_main(
+                    functools.partial(
+                        args.on_handle_exception, exception, sentry_event_id
+                    )
+                )
+
+        _report_exception_and_upload_logs_in_background(
+            exception=exception, args=args, on_done=on_done
         )
-    # TODO: maybe set our own error dialog here
-    if args.on_handle_exception:
-        args.on_handle_exception(exception, sentry_event_id)
-    return sentry_event_id
 
 
 def _try_handle_exception(
