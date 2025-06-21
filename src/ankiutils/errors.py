@@ -12,6 +12,7 @@ import logging
 import os
 import re
 import sys
+import threading
 import traceback
 from types import TracebackType
 from typing import Any, Callable, Optional
@@ -66,6 +67,7 @@ def setup_error_handler(  # noqa: PLR0913
         on_sentry_scope=on_sentry_scope,
     )
     _setup_excepthook(args)
+    _setup_threading_excepthook(args)
     if _error_reporting_enabled(args):
         _initialize_sentry(args, sentry_dsn)
 
@@ -200,7 +202,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
     """
 
     def excepthook(
-        etype: type[BaseException], val: BaseException, tb: TracebackType | None
+        etype: type[BaseException], val: BaseException, tb: TracebackType
     ) -> Any:
         handled = False
         try:
@@ -212,7 +214,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
             )
         finally:
             if handled:
-                return  # pylint: disable=lost-exception, return-in-finally
+                return
 
             if _this_addon_mentioned_in_tb(tb, args):
                 try:
@@ -224,10 +226,55 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
                         exc_info=e,
                     )
             elif not args.on_handle_exception:
-                original_excepthook(etype, val, tb)  # pylint: disable=lost-exception
+                original_excepthook(etype, val, tb)
 
     original_excepthook = sys.excepthook
     sys.excepthook = excepthook
+
+
+def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
+    """Set up a threading excepthook.
+    This is used to report exceptions from threads.
+    """
+
+    def excepthook(
+        exc_args: threading.ExceptHookArgs,
+    ) -> Any:
+        handled = False
+        if not exc_args.exc_value:
+            return original_excepthook(exc_args)
+        try:
+            handled = _try_handle_exception(
+                args,
+                exc_type=exc_args.exc_type,
+                exc_value=exc_args.exc_value,
+                tb=exc_args.exc_traceback,
+            )
+        except Exception as exc:
+            # catching all exceptions here prevents a potential exception loop
+            args.logger.exception(
+                "The threading exception handler threw an exception.", exc_info=exc
+            )
+        finally:
+            if handled:
+                return
+
+            if exc_args.exc_traceback and _this_addon_mentioned_in_tb(
+                exc_args.exc_traceback, args
+            ):
+                try:
+                    _maybe_report_exception(exception=exc_args.exc_value, args=args)
+                except Exception as e:
+                    args.logger.warning(
+                        "There was an error while reporting the exception "
+                        "or showing the feedback dialog.",
+                        exc_info=e,
+                    )
+            elif not args.on_handle_exception:
+                original_excepthook(exc_args)
+
+    original_excepthook = threading.excepthook
+    threading.excepthook = excepthook
 
 
 def _maybe_report_exception(
