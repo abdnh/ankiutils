@@ -13,10 +13,9 @@ classifiers = [
     "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
 ]
 dynamic = ["version"]
-dependencies = ["sentry-sdk"]
+dependencies = ["aqt", "sentry-sdk"]
 [dependency-groups]
 dev = [
-    "aqt",
     "mypy",
     "pre-commit",
     "pytest",
