@@ -293,6 +293,9 @@ def _upload_logs(args: _ErrorReportingArgs) -> dict[str, str] | None:
     if not log_file_path(addon).exists():
         return None
 
+    for handler in args.logger.handlers:
+        handler.flush()
+
     path = log_file_path(addon)
     name = f"{addon}_{checksum(path.read_text(encoding='utf-8'))}.log"
     try:
