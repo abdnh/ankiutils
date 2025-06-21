@@ -23,7 +23,6 @@ from sentry_sdk.integrations.argv import ArgvIntegration
 from sentry_sdk.integrations.dedupe import DedupeIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.stdlib import StdlibIntegration
-from sentry_sdk.integrations.threading import ThreadingIntegration
 from sentry_sdk.scope import Scope
 
 from .config import Config
@@ -88,7 +87,8 @@ def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> Non
             DedupeIntegration(),
             LoggingIntegration(),
             StdlibIntegration(),
-            ThreadingIntegration(),
+            # Causes problems with AnkiHub
+            # ThreadingIntegration(),
         ],
         # This disable the AtexitIntegration because
         # it causes a RuntimeError when Anki is closed.
