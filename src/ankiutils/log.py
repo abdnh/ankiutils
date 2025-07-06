@@ -1,17 +1,58 @@
+"""
+Logging setup.
+
+Credit: Adapted from the AnkiHub add-on.
+"""
+
 from __future__ import annotations
 
 import logging
-import os
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Any
 
+import structlog
 from anki.hooks import wrap
 from aqt import mw
 from aqt.addons import AddonManager
+from structlog.processors import CallsiteParameter
+from structlog.typing import Processor
 
-from ._internal import is_testing
+from ._internal import is_devmode, is_testing
+
+
+def _shared_log_processors(addon: str) -> list[Processor]:
+    return [
+        structlog.stdlib.filter_by_level,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.CallsiteParameterAdder(
+            parameters=[
+                CallsiteParameter.THREAD,
+                CallsiteParameter.MODULE,
+                CallsiteParameter.FUNC_NAME,
+            ],
+            additional_ignores=[f"{addon}.vendor.structlog"],
+        ),
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+    ]
+
+
+def _structlog_formatter(
+    addon: str, renderer: structlog.dev.ConsoleRenderer
+) -> logging.Formatter:
+    formatter = structlog.stdlib.ProcessorFormatter(
+        foreign_pre_chain=_shared_log_processors(addon),
+        processors=[
+            structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            renderer,
+        ],
+    )
+    return formatter
 
 
 def log_file_path(addon: str) -> Path:
@@ -20,22 +61,31 @@ def log_file_path(addon: str) -> Path:
     return logs_dir / f"{addon}.log"
 
 
-def get_logger(module: str) -> logging.Logger:
-    if is_testing():
-        logger = logging.getLogger("addon")
-    else:
-        addon = mw.addonManager.addonFromModule(module)
-        logger = logging.getLogger(addon)
-    logger.setLevel(logging.DEBUG)
-    logger.propagate = False
+def get_logger(module: str) -> structlog.stdlib.BoundLogger:
+    addon_name = "addon"
+    if not is_testing():
+        addon_name = mw.addonManager.addonFromModule(module)
+    structlog.configure(
+        processors=_shared_log_processors(addon_name)
+        + [
+            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+        ],
+        logger_factory=structlog.stdlib.LoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
+    std_logger = logging.getLogger(addon_name)
+    std_logger.propagate = False
+    std_logger.setLevel(logging.DEBUG)
 
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
-    stdout_handler.setLevel(logging.DEBUG if "ANKIDEV" in os.environ else logging.INFO)
-    stdout_formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    stdout_handler.setLevel(logging.DEBUG if is_devmode() else logging.INFO)
+    stdout_handler.setFormatter(
+        _structlog_formatter(
+            addon_name,
+            structlog.dev.ConsoleRenderer(colors=True),
+        )
     )
-    stdout_handler.setFormatter(stdout_formatter)
-    logger.addHandler(stdout_handler)
+    std_logger.addHandler(stdout_handler)
 
     file_handler: RotatingFileHandler | None = None
 
@@ -43,22 +93,25 @@ def get_logger(module: str) -> logging.Logger:
     def close_log_file(
         manager: AddonManager, m: str, *args: Any, **kwargs: Any
     ) -> None:
-        if m == addon and file_handler:
+        if m == addon_name and file_handler:
             file_handler.close()
 
     if not is_testing():
-        log_path = log_file_path(addon)
         file_handler = RotatingFileHandler(
-            str(log_path),
+            log_file_path(addon_name),
             "a",
-            encoding="utf-8",
             maxBytes=3 * 1024 * 1024,
             backupCount=5,
+            encoding="utf-8",
         )
-        file_formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(file_formatter)
-        logger.addHandler(file_handler)
-
+        file_handler.setLevel(logging.DEBUG if is_devmode() else logging.INFO)
+        file_handler.setFormatter(
+            _structlog_formatter(
+                addon_name,
+                structlog.dev.ConsoleRenderer(colors=False),
+            )
+        )
+        std_logger.addHandler(file_handler)
         AddonManager.deleteAddon = wrap(  # type: ignore[method-assign]
             AddonManager.deleteAddon, close_log_file, "before"
         )
@@ -66,4 +119,4 @@ def get_logger(module: str) -> logging.Logger:
             AddonManager.backupUserFiles, close_log_file, "before"
         )
 
-    return logger
+    return structlog.stdlib.get_logger(addon_name)
