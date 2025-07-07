@@ -6,6 +6,7 @@ Credit: Adapted from the AnkiHub add-on.
 
 from __future__ import annotations
 
+import json
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
@@ -43,7 +44,8 @@ def _shared_log_processors(addon: str) -> list[Processor]:
 
 
 def _structlog_formatter(
-    addon: str, renderer: structlog.dev.ConsoleRenderer
+    addon: str,
+    renderer: structlog.dev.ConsoleRenderer | structlog.processors.JSONRenderer,
 ) -> logging.Formatter:
     formatter = structlog.stdlib.ProcessorFormatter(
         foreign_pre_chain=_shared_log_processors(addon),
@@ -105,10 +107,18 @@ def get_logger(module: str) -> structlog.stdlib.BoundLogger:
             encoding="utf-8",
         )
         file_handler.setLevel(logging.DEBUG if is_devmode() else logging.INFO)
+
+        try:
+            import orjson  # noqa: PLC0415
+
+            def json_serializer(*args: Any, **kwargs: Any) -> str:
+                return orjson.dumps(*args, **kwargs).decode()
+        except ImportError:
+            json_serializer = json.dumps
         file_handler.setFormatter(
             _structlog_formatter(
                 addon_name,
-                structlog.dev.ConsoleRenderer(colors=False),
+                structlog.processors.JSONRenderer(serializer=json_serializer),
             )
         )
         std_logger.addHandler(file_handler)
