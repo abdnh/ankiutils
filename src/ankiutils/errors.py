@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import dataclasses
 import functools
-import logging
 import os
 import re
 import sys
@@ -18,6 +17,7 @@ from types import TracebackType
 from typing import Any, Callable, Optional
 
 import sentry_sdk
+import structlog
 from anki.utils import checksum, pointVersion
 from sentry_sdk import capture_exception, new_scope
 from sentry_sdk.integrations.argv import ArgvIntegration
@@ -36,7 +36,7 @@ from .log import log_file_path
 class _ErrorReportingArgs:
     consts: AddonConsts
     config: Config
-    logger: logging.Logger
+    logger: structlog.stdlib.BoundLogger
     on_handle_exception: Callable[[BaseException, str | None], None] | None
     on_sentry_scope: Callable[[Scope], None] | None
 
@@ -52,7 +52,7 @@ DEFAULT_SENTRY_DSN = "https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408
 def setup_error_handler(  # noqa: PLR0913
     consts: AddonConsts,
     config: Config,
-    logger: logging.Logger,
+    logger: structlog.stdlib.BoundLogger,
     sentry_dsn: str | None = None,
     on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
     on_sentry_scope: Callable[[Scope], None] | None = None,
@@ -137,7 +137,7 @@ def report_exception_and_upload_logs(
     exception: BaseException,
     consts: AddonConsts,
     config: Config,
-    logger: logging.Logger,
+    logger: structlog.stdlib.BoundLogger,
     on_sentry_scope: Callable[[Scope], None] | None = None,
 ) -> str | None:
     return _report_exception_and_upload_logs(
@@ -174,7 +174,7 @@ def report_exception_and_upload_logs_in_background(
     exception: BaseException,
     consts: AddonConsts,
     config: Config,
-    logger: logging.Logger,
+    logger: structlog.stdlib.BoundLogger,
     on_sentry_scope: Callable[[Scope], None] | None = None,
     on_done: Callable[[str | None], None] | None = None,
 ) -> None:
