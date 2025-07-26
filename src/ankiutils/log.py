@@ -65,19 +65,22 @@ def log_file_path(addon: str) -> Path:
 
 def get_logger(module: str) -> structlog.stdlib.BoundLogger:
     addon_name = "addon"
+    logger_name = addon_name
     if not is_testing():
         addon_name = mw.addonManager.addonFromModule(module)
+        # This is a workaround to avoid handling logs from vendored modules.
+        logger_name = f"{addon_name}_"
+    std_logger = logging.getLogger(logger_name)
+    std_logger.propagate = False
+    std_logger.setLevel(logging.DEBUG)
     structlog.configure(
         processors=_shared_log_processors(addon_name)
         + [
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
-        logger_factory=structlog.stdlib.LoggerFactory(),
+        logger_factory=lambda _: std_logger,
         cache_logger_on_first_use=True,
     )
-    std_logger = logging.getLogger(addon_name)
-    std_logger.propagate = False
-    std_logger.setLevel(logging.DEBUG)
 
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
     stdout_handler.setLevel(logging.DEBUG if is_devmode() else logging.INFO)
