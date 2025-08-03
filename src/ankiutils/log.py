@@ -80,6 +80,7 @@ def get_logger(module: str) -> structlog.stdlib.BoundLogger:
         ],
         logger_factory=lambda _: std_logger,
         cache_logger_on_first_use=True,
+        wrapper_class=structlog.stdlib.BoundLogger,
     )
 
     stdout_handler = logging.StreamHandler(stream=sys.stdout)
