@@ -121,7 +121,7 @@ def delete_addon(
 ) -> None:
     if is_our_addon_module(consts, module):
         addon_dir = self.addonsFolder(module)
-        run_restart_anki_script(consts, config, addon_dir)
+        run_restart_anki_script(consts, addon_dir)
         mw.close()
     else:
         _old(self, module)
