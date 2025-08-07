@@ -41,8 +41,10 @@ def get_updates_dir(consts: AddonConsts) -> Path:
 def run_restart_anki_script(consts: AddonConsts, *args: Any) -> None:
     pid = os.getpid()
     updates_dir = get_updates_dir(consts)
-    shutil.copytree(consts.dir / "bin" / "restart_anki", updates_dir / "restart_anki")
-    exe_path = updates_dir / "restart_anki" / "restart_anki.exe"
+    shutil.copyfile(
+        consts.dir / "bin" / "restart_anki.exe", updates_dir / "restart_anki.exe"
+    )
+    exe_path = updates_dir / "restart_anki.exe"
     anki_exe = anki_path()
     anki_base = mw.pm.base
     subprocess.Popen([str(exe_path), str(pid), anki_exe, anki_base, *args])
