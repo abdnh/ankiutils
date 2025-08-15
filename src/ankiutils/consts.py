@@ -25,8 +25,11 @@ def _read_version(addon_dir: Path) -> str:
 
 
 def read_manifest(addon_dir: Path) -> dict[str, Any]:
-    with open(addon_dir / "manifest.json", encoding="utf-8") as file:
-        return json.load(file)
+    try:
+        with open(addon_dir / "manifest.json", encoding="utf-8") as file:
+            return json.load(file)
+    except FileNotFoundError:
+        return {}
 
 
 def _get_manifest_name(manifest: dict[str, Any]) -> str | None:
