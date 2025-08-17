@@ -216,7 +216,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
             if handled:
                 return
 
-            if _this_addon_mentioned_in_tb(tb, args):
+            if _this_addon_mentioned_in_tb(tb, args) and _error_reporting_enabled(args):
                 try:
                     _maybe_report_exception(exception=val, args=args)
                 except Exception as e:
@@ -259,8 +259,10 @@ def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
             if handled:
                 return
 
-            if exc_args.exc_traceback and _this_addon_mentioned_in_tb(
-                exc_args.exc_traceback, args
+            if (
+                exc_args.exc_traceback
+                and _this_addon_mentioned_in_tb(exc_args.exc_traceback, args)
+                and _error_reporting_enabled(args)
             ):
                 try:
                     _maybe_report_exception(exception=exc_args.exc_value, args=args)
