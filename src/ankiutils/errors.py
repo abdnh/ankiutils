@@ -367,21 +367,9 @@ def _report_exception(
 
 
 def _error_reporting_enabled(args: _ErrorReportingArgs) -> bool:
-    if _obsolete_version_of_sentry_sdk():
-        args.logger.info(
-            "Obsolete version of sentry-sdk detected. Error reporting disabled."
-        )
-        return False
-
-    result = (
+    return (
         args.config.get("report_errors") and not os.getenv("REPORT_ERRORS", None) == "0"
     )
-    return result
-
-
-def _obsolete_version_of_sentry_sdk() -> bool:
-    result = [int(x) for x in sentry_sdk.VERSION.split(".")] < [1, 5, 5]
-    return result
 
 
 def _upload_logs(args: _ErrorReportingArgs) -> dict[str, str] | None:
