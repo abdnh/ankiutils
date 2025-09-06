@@ -26,6 +26,7 @@ dev = [
     "pytest-cov",
     "ruff",
     "types-requests",
+    "types-waitress",
 ]
 
 [tool.setuptools_scm]
