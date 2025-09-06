@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import mimetypes
+import os
 import threading
 from http import HTTPStatus
 
@@ -15,6 +16,11 @@ def _text_response(code: HTTPStatus, text: str) -> flask.Response:
     resp = flask.make_response(text, code)
     resp.headers["Content-type"] = "text/plain"
     return resp
+
+
+def is_hmr_enabled(consts: AddonConsts) -> bool:
+    key = f"{consts.module}_HMR".upper()
+    return bool(os.environ.get(key, ""))
 
 
 class SveltekitServerError(Exception):
@@ -34,9 +40,10 @@ class SveltekitServer(threading.Thread):
         super().__init__()
         self.consts = consts
         self.logger = logger
-        self.flask_app = flask.Flask(__name__)
         self.is_shutdown = False
-        self._register_routes()
+        if not is_hmr_enabled(self.consts):
+            self.flask_app = flask.Flask(__name__)
+            self._register_routes()
 
     def _register_routes(self) -> None:
         self.flask_app.add_url_rule(
@@ -67,6 +74,10 @@ class SveltekitServer(threading.Thread):
         return response
 
     def run(self) -> None:
+        if is_hmr_enabled(self.consts):
+            self._ready.set()
+            self.logger.debug("HMR is enabled; skipping Sveltekit server start")
+            return
         try:
             self.server = create_server(
                 self.flask_app,
@@ -86,6 +97,8 @@ class SveltekitServer(threading.Thread):
                 raise
 
     def shutdown(self) -> None:
+        if not self.server:
+            return
         self.is_shutdown = True
         sockets = list(self.server._map.values())  # type: ignore
         for socket in sockets:
@@ -93,10 +106,14 @@ class SveltekitServer(threading.Thread):
         self.server.task_dispatcher.shutdown()
 
     def get_port(self) -> int:
+        if is_hmr_enabled(self.consts):
+            return 5174
         self._ready.wait()
         return int(self.server.effective_port)  # type: ignore
 
     def get_host(self) -> str:
+        if is_hmr_enabled(self.consts):
+            return "127.0.0.1"
         self._ready.wait()
         return self.server.effective_host  # type: ignore
 
