@@ -1,4 +1,4 @@
-from typing import Optional
+from __future__ import annotations
 
 from anki.utils import pointVersion
 from aqt import mw
@@ -10,12 +10,12 @@ from ..consts import AddonConsts
 
 class Dialog(QDialog):
     key: str = ""
-    default_size: Optional[tuple[int, int]] = None
+    default_size: tuple[int, int] | None = None
 
     def __init__(
         self,
         consts: AddonConsts,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         flags: Qt.WindowType = Qt.WindowType.Dialog,
         subtitle: str = "",
     ) -> None:
