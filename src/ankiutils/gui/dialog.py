@@ -17,8 +17,10 @@ class Dialog(QDialog):
         consts: AddonConsts,
         parent: Optional[QWidget] = None,
         flags: Qt.WindowType = Qt.WindowType.Dialog,
+        subtitle: str = "",
     ) -> None:
         self.consts = consts
+        self.subtitle = ""
         super().__init__(parent, flags)
         qconnect(self.finished, self._on_finished)
         if hasattr(mw, "garbage_collect_on_dialog_finish"):
@@ -32,6 +34,10 @@ class Dialog(QDialog):
             )
         else:
             restoreGeom(self, f"{self.consts.module}_{self.key}")
+        title = self.consts.name
+        if self.subtitle:
+            title += f" - {self.subtitle}"
+        self.setWindowTitle(title)
 
     def _on_finished(self) -> None:
         saveGeom(self, f"{self.consts.module}_{self.key}")
