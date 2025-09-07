@@ -5,6 +5,8 @@ from aqt import mw
 from aqt.qt import QDialog, Qt, QWidget, qconnect
 from aqt.utils import restoreGeom, saveGeom
 
+from ..consts import AddonConsts
+
 
 class Dialog(QDialog):
     key: str = ""
@@ -12,24 +14,24 @@ class Dialog(QDialog):
 
     def __init__(
         self,
-        module: str,
+        consts: AddonConsts,
         parent: Optional[QWidget] = None,
         flags: Qt.WindowType = Qt.WindowType.Dialog,
     ) -> None:
+        self.consts = consts
         super().__init__(parent, flags)
         qconnect(self.finished, self._on_finished)
         if hasattr(mw, "garbage_collect_on_dialog_finish"):
             mw.garbage_collect_on_dialog_finish(self)
-        self._addon = mw.addonManager.addonFromModule(module)
         self.setup_ui()
 
     def setup_ui(self) -> None:
         if pointVersion() >= 55:
             restoreGeom(
-                self, f"{self._addon}_{self.key}", default_size=self.default_size
+                self, f"{self.consts.module}_{self.key}", default_size=self.default_size
             )
         else:
-            restoreGeom(self, f"{self._addon}_{self.key}")
+            restoreGeom(self, f"{self.consts.module}_{self.key}")
 
     def _on_finished(self) -> None:
-        saveGeom(self, f"{self._addon}_{self.key}")
+        saveGeom(self, f"{self.consts.module}_{self.key}")
