@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget
 from aqt.webview import AnkiWebView
 from structlog.stdlib import BoundLogger
@@ -42,7 +44,7 @@ class SveltekitWebDialog(Dialog):
         super().setup_ui()
         self._load_page()
 
-    def on_bridge_command(self, message: str) -> None:
+    def on_bridge_command(self, message: str) -> Any:
         self.logger.warning("Unhandled bridge command", message=message)
 
     def _load_page(self) -> None:
