@@ -32,7 +32,9 @@ class SveltekitWebDialog(Dialog):
     def setup_ui(self) -> None:
         layout = QVBoxLayout()
         self.setLayout(layout)
-        title = f"{self.consts.name} - {self.subtitle}"
+        title = self.consts.name
+        if self.subtitle:
+            title += f" - {self.subtitle}"
         self.web = AnkiWebView(self, title)
         self.web.set_title(title)
         layout.addWidget(self.web)
