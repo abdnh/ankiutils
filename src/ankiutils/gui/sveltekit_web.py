@@ -17,7 +17,7 @@ class SveltekitWebDialog(Dialog):
         server: SveltekitServer,
         path: str,
         parent: QWidget | None = None,
-        flags: Qt.WindowType = Qt.WindowType.Dialog,
+        flags: Qt.WindowType = Qt.WindowType.Window,
         subtitle: str = "",
     ):
         self.web: AnkiWebView
