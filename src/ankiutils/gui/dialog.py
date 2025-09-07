@@ -20,7 +20,7 @@ class Dialog(QDialog):
         subtitle: str = "",
     ) -> None:
         self.consts = consts
-        self.subtitle = ""
+        self.subtitle = subtitle
         super().__init__(parent, flags)
         qconnect(self.finished, self._on_finished)
         if hasattr(mw, "garbage_collect_on_dialog_finish"):
