@@ -7,7 +7,7 @@ from aqt.webview import AnkiWebView
 from structlog.stdlib import BoundLogger
 
 from ..consts import AddonConsts
-from ..sveltekit import SveltekitServer
+from ..sveltekit import SveltekitServer, is_hmr_enabled
 from .dialog import Dialog
 
 
@@ -49,5 +49,9 @@ class SveltekitWebDialog(Dialog):
 
     def _load_page(self) -> None:
         self.web.set_open_links_externally(False)
-        self.web.load_url(QUrl(f"{self.server.get_url()}/{self.path}"))
+        if is_hmr_enabled(self.consts):
+            server = "http://127.0.0.1:5174"
+        else:
+            server = self.server.get_url()
+        self.web.load_url(QUrl(f"{server}/{self.path}"))
         self.web.add_dynamic_styling_and_props_then_show()

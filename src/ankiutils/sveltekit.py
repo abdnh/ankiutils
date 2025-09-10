@@ -25,6 +25,10 @@ def get_addon_env_var(consts: AddonConsts, name: str, default: str = "") -> str:
     return os.environ.get(key, default)
 
 
+def is_hmr_enabled(consts: AddonConsts) -> bool:
+    return bool(get_addon_env_var(consts, "HMR"))
+
+
 def get_api_host(consts: AddonConsts) -> str:
     return get_addon_env_var(consts, "API_HOST", "127.0.0.1")
 
