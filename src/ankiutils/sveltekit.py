@@ -82,7 +82,9 @@ class SveltekitServer(threading.Thread):
             return _text_response(
                 HTTPStatus.NOT_FOUND, f"No handler found for {service}/{method}"
             )
-        return handler(request.data)
+        response = flask.make_response(handler(request.data))
+        response.headers["Content-type"] = "application/proto"
+        return response
 
     def _handle_sveltekit_request(self, path: str) -> flask.Response:
         immutable = "immutable" in path
