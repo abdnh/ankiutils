@@ -4,8 +4,10 @@ import mimetypes
 import os
 import threading
 from http import HTTPStatus
+from typing import Any, Callable
 
 import flask
+from flask import request
 from structlog.stdlib import BoundLogger
 from waitress.server import create_server
 
@@ -18,9 +20,17 @@ def _text_response(code: HTTPStatus, text: str) -> flask.Response:
     return resp
 
 
-def is_hmr_enabled(consts: AddonConsts) -> bool:
-    key = f"{consts.module}_HMR".upper()
-    return bool(os.environ.get(key, ""))
+def get_addon_env_var(consts: AddonConsts, name: str, default: str = "") -> str:
+    key = f"{consts.module}_{name}".upper()
+    return os.environ.get(key, default)
+
+
+def get_api_host(consts: AddonConsts) -> str:
+    return get_addon_env_var(consts, "API_HOST", "127.0.0.1")
+
+
+def get_api_port(consts: AddonConsts) -> int:
+    return int(get_addon_env_var(consts, "API_PORT", "0"))
 
 
 class SveltekitServerError(Exception):
@@ -41,16 +51,36 @@ class SveltekitServer(threading.Thread):
         self.consts = consts
         self.logger = logger
         self.is_shutdown = False
-        if not is_hmr_enabled(self.consts):
-            self.flask_app = flask.Flask(__name__)
-            self._register_routes()
+        self.flask_app = flask.Flask(__name__)
+        self.proto_handlers: dict[tuple[str, str], Callable[[Any], Any]] = {}
+        self._register_routes()
 
     def _register_routes(self) -> None:
         self.flask_app.add_url_rule(
-            "/<path:path>", methods=["GET", "POST"], view_func=self._handle_request
+            "/api/<path:service>/<path:method>",
+            methods=["POST"],
+            view_func=self._handle_api_request,
+        )
+        self.flask_app.add_url_rule(
+            "/<path:path>",
+            methods=["GET", "POST"],
+            view_func=self._handle_sveltekit_request,
         )
 
-    def _handle_request(self, path: str) -> flask.Response:
+    def add_proto_handler(
+        self, service: str, method: str, handler: Callable[[bytes], Any]
+    ) -> None:
+        self.proto_handlers[(service, method)] = handler
+
+    def _handle_api_request(self, service: str, method: str) -> flask.Response:
+        handler = self.proto_handlers.get((service, method))
+        if not handler:
+            return _text_response(
+                HTTPStatus.NOT_FOUND, f"No handler found for {service}/{method}"
+            )
+        return handler(request.data)
+
+    def _handle_sveltekit_request(self, path: str) -> flask.Response:
         immutable = "immutable" in path
         if not immutable:
             path = "index.html"
@@ -74,15 +104,13 @@ class SveltekitServer(threading.Thread):
         return response
 
     def run(self) -> None:
-        if is_hmr_enabled(self.consts):
-            self._ready.set()
-            self.logger.debug("HMR is enabled; skipping Sveltekit server start")
-            return
         try:
+            desired_host = get_api_host(self.consts)
+            desired_port = get_api_port(self.consts)
             self.server = create_server(
                 self.flask_app,
-                host="127.0.0.1",
-                port=0,
+                host=desired_host,
+                port=desired_port,
                 clear_untrusted_proxy_headers=True,
             )
             print(
@@ -106,14 +134,10 @@ class SveltekitServer(threading.Thread):
         self.server.task_dispatcher.shutdown()
 
     def get_port(self) -> int:
-        if is_hmr_enabled(self.consts):
-            return 5174
         self._ready.wait()
         return int(self.server.effective_port)  # type: ignore
 
     def get_host(self) -> str:
-        if is_hmr_enabled(self.consts):
-            return "127.0.0.1"
         self._ready.wait()
         return self.server.effective_host  # type: ignore
 
