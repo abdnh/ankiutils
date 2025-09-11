@@ -4,12 +4,15 @@ import mimetypes
 import os
 import threading
 from http import HTTPStatus
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import flask
 from flask import request
 from structlog.stdlib import BoundLogger
 from waitress.server import create_server
+
+if TYPE_CHECKING:
+    from ankiutils.gui.sveltekit_web import SveltekitWebDialog
 
 from .consts import AddonConsts
 
@@ -56,7 +59,10 @@ class SveltekitServer(threading.Thread):
         self.logger = logger
         self.is_shutdown = False
         self.flask_app = flask.Flask(__name__)
-        self.proto_handlers: dict[tuple[str, str], Callable[[Any], Any]] = {}
+        self.proto_handlers: dict[tuple[str, str], Callable[[bytes], Any]] = {}
+        self.proto_handlers_for_dialog: dict[
+            int, dict[tuple[str, str], Callable[[bytes], Any]]
+        ] = {}
         self._register_routes()
 
     def _register_routes(self) -> None:
@@ -76,8 +82,30 @@ class SveltekitServer(threading.Thread):
     ) -> None:
         self.proto_handlers[(service, method)] = handler
 
+    def add_proto_handler_for_dialog(
+        self,
+        dialog: SveltekitWebDialog,
+        service: str,
+        method: str,
+        func: Callable[[bytes], Any],
+    ) -> None:
+        dialog_id = id(dialog)
+        self.proto_handlers_for_dialog.setdefault(dialog_id, {})
+        handlers = self.proto_handlers_for_dialog[dialog_id]
+        handlers[(service, method)] = func
+
+    def remove_proto_handlers_for_dialog(self, dialog: SveltekitWebDialog) -> None:
+        dialog_id = id(dialog)
+        self.proto_handlers_for_dialog.pop(dialog_id, None)
+
     def _handle_api_request(self, service: str, method: str) -> flask.Response:
-        handler = self.proto_handlers.get((service, method))
+        dialog_id: str | None = request.headers.get("qt-widget-id", None)
+        if dialog_id:
+            handler = self.proto_handlers_for_dialog.get(int(dialog_id), {}).get(
+                (service, method)
+            )
+        if not handler:
+            handler = self.proto_handlers.get((service, method))
         if not handler:
             return _text_response(
                 HTTPStatus.NOT_FOUND, f"No handler found for {service}/{method}"

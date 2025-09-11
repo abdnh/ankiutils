@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget
+from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget, qconnect
 from aqt.webview import AnkiWebView
 from structlog.stdlib import BoundLogger
 
@@ -32,6 +32,7 @@ class SveltekitWebDialog(Dialog):
         )
 
     def setup_ui(self) -> None:
+        qconnect(self.finished, self._remove_proto_handlers)
         layout = QVBoxLayout()
         self.setLayout(layout)
         title = self.consts.name
@@ -53,5 +54,8 @@ class SveltekitWebDialog(Dialog):
             server = "http://127.0.0.1:5174"
         else:
             server = self.server.get_url()
-        self.web.load_url(QUrl(f"{server}/{self.path}"))
+        self.web.load_url(QUrl(f"{server}/{self.path}?id={id(self)}"))
         self.web.add_dynamic_styling_and_props_then_show()
+
+    def _remove_proto_handlers(self) -> None:
+        self.server.remove_proto_handlers_for_dialog(self)
