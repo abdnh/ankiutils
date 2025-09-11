@@ -4,7 +4,7 @@ import mimetypes
 import os
 import threading
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, TypeAlias
 
 import flask
 from flask import request
@@ -49,6 +49,9 @@ class SveltekitServerNotInitializedError(SveltekitServerError):
         super().__init__("Sveltekit server is not initialized")
 
 
+ProtoHandler: TypeAlias = Callable[[bytes], bytes]
+
+
 class SveltekitServer(threading.Thread):
     _ready = threading.Event()
     daemon = True
@@ -59,7 +62,7 @@ class SveltekitServer(threading.Thread):
         self.logger = logger
         self.is_shutdown = False
         self.flask_app = flask.Flask(__name__)
-        self.proto_handlers: dict[tuple[str, str], Callable[[bytes], bytes]] = {}
+        self.proto_handlers: dict[tuple[str, str], ProtoHandler] = {}
         self.proto_handlers_for_dialog: dict[
             int, dict[tuple[str, str], Callable[[bytes], bytes]]
         ] = {}
@@ -78,7 +81,7 @@ class SveltekitServer(threading.Thread):
         )
 
     def add_proto_handler(
-        self, service: str, method: str, handler: Callable[[bytes], bytes]
+        self, service: str, method: str, handler: ProtoHandler
     ) -> None:
         self.proto_handlers[(service, method)] = handler
 
@@ -87,7 +90,7 @@ class SveltekitServer(threading.Thread):
         dialog: SveltekitWebDialog,
         service: str,
         method: str,
-        func: Callable[[bytes], bytes],
+        func: ProtoHandler,
     ) -> None:
         dialog_id = id(dialog)
         self.proto_handlers_for_dialog.setdefault(dialog_id, {})
@@ -100,6 +103,7 @@ class SveltekitServer(threading.Thread):
 
     def _handle_api_request(self, service: str, method: str) -> flask.Response:
         dialog_id: str | None = request.headers.get("qt-widget-id", None)
+        handler: ProtoHandler | None = None
         if dialog_id:
             handler = self.proto_handlers_for_dialog.get(int(dialog_id), {}).get(
                 (service, method)
