@@ -4,7 +4,7 @@ import mimetypes
 import os
 import threading
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Callable
 
 import flask
 from flask import request
@@ -59,9 +59,9 @@ class SveltekitServer(threading.Thread):
         self.logger = logger
         self.is_shutdown = False
         self.flask_app = flask.Flask(__name__)
-        self.proto_handlers: dict[tuple[str, str], Callable[[bytes], Any]] = {}
+        self.proto_handlers: dict[tuple[str, str], Callable[[bytes], bytes]] = {}
         self.proto_handlers_for_dialog: dict[
-            int, dict[tuple[str, str], Callable[[bytes], Any]]
+            int, dict[tuple[str, str], Callable[[bytes], bytes]]
         ] = {}
         self._register_routes()
 
@@ -78,7 +78,7 @@ class SveltekitServer(threading.Thread):
         )
 
     def add_proto_handler(
-        self, service: str, method: str, handler: Callable[[bytes], Any]
+        self, service: str, method: str, handler: Callable[[bytes], bytes]
     ) -> None:
         self.proto_handlers[(service, method)] = handler
 
@@ -87,7 +87,7 @@ class SveltekitServer(threading.Thread):
         dialog: SveltekitWebDialog,
         service: str,
         method: str,
-        func: Callable[[bytes], Any],
+        func: Callable[[bytes], bytes],
     ) -> None:
         dialog_id = id(dialog)
         self.proto_handlers_for_dialog.setdefault(dialog_id, {})
