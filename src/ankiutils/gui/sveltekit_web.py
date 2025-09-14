@@ -33,7 +33,7 @@ class SveltekitWebDialog(Dialog):
         )
 
     def setup_ui(self) -> None:
-        qconnect(self.finished, self._remove_proto_handlers)
+        qconnect(self.finished, self._cleanup)
         layout = QVBoxLayout()
         self.setLayout(layout)
         title = self.consts.name
@@ -63,5 +63,6 @@ class SveltekitWebDialog(Dialog):
         self.web.load_url(QUrl(f"{server}/{self.path}?id={id(self)}{extra}"))
         self.web.add_dynamic_styling_and_props_then_show()
 
-    def _remove_proto_handlers(self) -> None:
+    def _cleanup(self) -> None:
         self.server.remove_proto_handlers_for_dialog(self)
+        self.web.cleanup()
