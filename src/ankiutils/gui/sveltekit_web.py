@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget, qconnect
+from aqt.theme import theme_manager
 from aqt.webview import AnkiWebView
 from structlog.stdlib import BoundLogger
 
@@ -50,11 +51,16 @@ class SveltekitWebDialog(Dialog):
 
     def _load_page(self) -> None:
         self.web.set_open_links_externally(False)
+        if theme_manager.night_mode:
+            extra = "#night"
+        else:
+            extra = ""
+
         if is_hmr_enabled(self.consts):
             server = "http://127.0.0.1:5174"
         else:
             server = self.server.get_url()
-        self.web.load_url(QUrl(f"{server}/{self.path}?id={id(self)}"))
+        self.web.load_url(QUrl(f"{server}/{self.path}?id={id(self)}{extra}"))
         self.web.add_dynamic_styling_and_props_then_show()
 
     def _remove_proto_handlers(self) -> None:
