@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import urllib
+import urllib.parse
 from typing import Any
 
 from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget, qconnect
@@ -49,6 +51,9 @@ class SveltekitWebDialog(Dialog):
     def on_bridge_command(self, message: str) -> Any:
         self.logger.warning("Unhandled bridge command", message=message)
 
+    def get_query_params(self) -> dict[str, Any]:
+        return {"id": id(self)}
+
     def _load_page(self) -> None:
         self.web.set_open_links_externally(False)
         if theme_manager.night_mode:
@@ -60,7 +65,8 @@ class SveltekitWebDialog(Dialog):
             server = "http://127.0.0.1:5174"
         else:
             server = self.server.get_url()
-        self.web.load_url(QUrl(f"{server}/{self.path}?id={id(self)}{extra}"))
+        query_string = urllib.parse.urlencode(self.get_query_params())
+        self.web.load_url(QUrl(f"{server}/{self.path}?{query_string}{extra}"))
         self.web.add_dynamic_styling_and_props_then_show()
 
     def _cleanup(self) -> None:
