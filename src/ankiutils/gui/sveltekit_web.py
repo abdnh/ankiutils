@@ -15,6 +15,8 @@ from .dialog import Dialog
 
 
 class SveltekitWebDialog(Dialog):
+    default_size = (800, 600)
+
     def __init__(
         self,
         consts: AddonConsts,
