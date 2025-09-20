@@ -4,11 +4,12 @@ import mimetypes
 import os
 import threading
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Callable, TypeAlias
+from typing import TYPE_CHECKING, Callable
 
 import flask
 from flask import request
 from structlog.stdlib import BoundLogger
+from typing_extensions import TypeAlias
 from waitress.server import create_server
 
 if TYPE_CHECKING:
