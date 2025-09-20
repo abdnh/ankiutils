@@ -69,7 +69,19 @@ class SveltekitWebDialog(Dialog):
             server = self.server.get_url()
         query_string = urllib.parse.urlencode(self.get_query_params())
         self.web.load_url(QUrl(f"{server}/{self.path}?{query_string}{extra}"))
-        self.web.add_dynamic_styling_and_props_then_show()
+        funcs = [
+            "add_dynamic_styling_and_props_then_show",
+            "add_dynamic_css_and_classes_then_show",
+            "inject_dynamic_style_and_show",
+        ]
+        for func in funcs:
+            try:
+                getattr(self.web, func)()
+            except AttributeError:
+                continue
+            else:
+                return
+        self.web.show()
 
     def _cleanup(self) -> None:
         self.server.remove_proto_handlers_for_dialog(self)
