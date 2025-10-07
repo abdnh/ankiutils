@@ -216,15 +216,20 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
             if handled:
                 return
 
-            if _this_addon_mentioned_in_tb(tb, args) and _error_reporting_enabled(args):
-                try:
-                    _maybe_report_exception(exception=val, args=args)
-                except Exception as e:
-                    args.logger.warning(
-                        "Error while reporting exception",
-                        exc_info=e,
-                    )
-            if not args.on_handle_exception:
+            if _this_addon_mentioned_in_tb(tb, args):
+                if _error_reporting_enabled(args):
+                    try:
+                        _maybe_report_exception(exception=val, args=args)
+                    except Exception as e:
+                        args.logger.warning(
+                            "Error while reporting exception",
+                            exc_info=e,
+                        )
+                elif args.on_handle_exception:
+                    args.on_handle_exception(val, None)
+                else:
+                    original_excepthook(etype, val, tb)
+            else:
                 original_excepthook(etype, val, tb)
 
     original_excepthook = sys.excepthook
@@ -258,20 +263,23 @@ def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
             if handled:
                 return
 
-            if (
-                exc_args.exc_traceback
-                and _this_addon_mentioned_in_tb(exc_args.exc_traceback, args)
-                and _error_reporting_enabled(args)
+            if exc_args.exc_traceback and _this_addon_mentioned_in_tb(
+                exc_args.exc_traceback, args
             ):
-                try:
-                    _maybe_report_exception(exception=exc_args.exc_value, args=args)
-                except Exception as e:
-                    args.logger.warning(
-                        "There was an error while reporting the exception "
-                        "or showing the feedback dialog.",
-                        exc_info=e,
-                    )
-            if not args.on_handle_exception:
+                if _error_reporting_enabled(args):
+                    try:
+                        _maybe_report_exception(exception=exc_args.exc_value, args=args)
+                    except Exception as e:
+                        args.logger.warning(
+                            "There was an error while reporting the exception "
+                            "or showing the feedback dialog.",
+                            exc_info=e,
+                        )
+                elif args.on_handle_exception:
+                    args.on_handle_exception(exc_args.exc_value, None)
+                else:
+                    original_excepthook(exc_args)
+            else:
                 original_excepthook(exc_args)
 
     original_excepthook = threading.excepthook
@@ -281,22 +289,18 @@ def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
 def _maybe_report_exception(
     exception: BaseException, args: _ErrorReportingArgs
 ) -> None:
-    if _error_reporting_enabled(args):
+    def on_done(sentry_event_id: str | None) -> None:
+        # TODO: maybe set our own error dialog here
+        if args.on_handle_exception:
+            from aqt import mw  # noqa: PLC0415
 
-        def on_done(sentry_event_id: str | None) -> None:
-            # TODO: maybe set our own error dialog here
-            if args.on_handle_exception:
-                from aqt import mw  # noqa: PLC0415
+            mw.taskman.run_on_main(
+                functools.partial(args.on_handle_exception, exception, sentry_event_id)
+            )
 
-                mw.taskman.run_on_main(
-                    functools.partial(
-                        args.on_handle_exception, exception, sentry_event_id
-                    )
-                )
-
-        _report_exception_and_upload_logs_in_background(
-            exception=exception, args=args, on_done=on_done
-        )
+    _report_exception_and_upload_logs_in_background(
+        exception=exception, args=args, on_done=on_done
+    )
 
 
 def _try_handle_exception(
