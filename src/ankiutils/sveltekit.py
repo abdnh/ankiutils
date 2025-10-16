@@ -3,8 +3,9 @@ from __future__ import annotations
 import mimetypes
 import os
 import threading
+import traceback
 from http import HTTPStatus
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 import flask
 from flask import request
@@ -21,6 +22,12 @@ from .consts import AddonConsts
 def _text_response(code: HTTPStatus, text: str) -> flask.Response:
     resp = flask.make_response(text, code)
     resp.headers["Content-type"] = "text/plain"
+    return resp
+
+
+def _json_response(code: HTTPStatus, data: Any) -> flask.Response:
+    resp = flask.make_response(data, code)
+    resp.headers["Content-type"] = "application/json"
     return resp
 
 
@@ -115,8 +122,15 @@ class SveltekitServer(threading.Thread):
             return _text_response(
                 HTTPStatus.NOT_FOUND, f"No handler found for {service}/{method}"
             )
-        response = flask.make_response(handler(request.data))
-        response.headers["Content-type"] = "application/proto"
+        try:
+            response = flask.make_response(handler(request.data))
+            response.headers["Content-type"] = "application/proto"
+        except Exception as exc:
+            print(traceback.format_exc())
+            response = _json_response(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                {"code": "internal", "message": str(exc)},
+            )
         return response
 
     def _handle_sveltekit_request(self, path: str) -> flask.Response:
