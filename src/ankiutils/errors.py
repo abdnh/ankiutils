@@ -225,7 +225,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
                             "Error while reporting exception",
                             exc_info=e,
                         )
-                elif args.on_handle_exception:
+                if args.on_handle_exception:
                     args.on_handle_exception(val, None)
                 else:
                     original_excepthook(etype, val, tb)
@@ -275,7 +275,7 @@ def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
                             "or showing the feedback dialog.",
                             exc_info=e,
                         )
-                elif args.on_handle_exception:
+                if args.on_handle_exception:
                     args.on_handle_exception(exc_args.exc_value, None)
                 else:
                     original_excepthook(exc_args)
