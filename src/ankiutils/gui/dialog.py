@@ -38,6 +38,12 @@ class Dialog(QDialog):
         if self.subtitle:
             title += f" - {self.subtitle}"
         self.setWindowTitle(title)
+        try:
+            from aqt.utils import setWindowIcon  # noqa: PLC0415
+
+            setWindowIcon(self)
+        except ImportError:
+            pass
 
     def _on_finished(self) -> None:
         saveGeom(self, f"{self.consts.module}_{self.key}")
