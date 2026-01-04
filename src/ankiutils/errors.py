@@ -25,6 +25,7 @@ from sentry_sdk.integrations.dedupe import DedupeIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.stdlib import StdlibIntegration
 from sentry_sdk.scope import Scope
+from sentry_sdk.types import Event, Hint, Log
 
 from .config import Config
 from .consts import AddonConsts
@@ -96,12 +97,12 @@ def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> Non
         # it causes a RuntimeError when Anki is closed.
         shutdown_timeout=0,
         before_send=lambda event, hint: _before_send(args, event, hint),
+        enable_logs=True,
+        before_send_log=lambda log, hint: _before_send_log(args, log, hint),
     )
 
 
-def _before_send(
-    args: _ErrorReportingArgs, event: Any, hint: dict[str, Any]
-) -> Any | None:
+def _before_send(args: _ErrorReportingArgs, event: Event, hint: Hint) -> Any | None:
     """Filter out events created by the LoggingIntegration
     that are not related to this add-on."""
     if "log_record" in hint:
@@ -109,6 +110,14 @@ def _before_send(
         if logger_name != args.logger.name:
             return None
     return event
+
+
+def _before_send_log(args: _ErrorReportingArgs, log: Log, hint: Hint) -> Log | None:
+    if "log_record" in hint:
+        logger_name = hint["log_record"].name
+        if logger_name != args.logger.name:
+            return None
+    return log
 
 
 def _report_exception_and_upload_logs(
