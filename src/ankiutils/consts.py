@@ -20,8 +20,11 @@ class AddonConsts:
 
 
 def _read_version(addon_dir: Path) -> str:
-    with open(addon_dir / ".version", encoding="utf-8") as f:
-        return f.read().strip()
+    try:
+        with open(addon_dir / ".version", encoding="utf-8") as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return "dev"
 
 
 def read_manifest(addon_dir: Path) -> dict[str, Any]:
