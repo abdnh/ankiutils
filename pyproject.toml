@@ -8,10 +8,8 @@ authors = [{ name = "Abdo", email = "abdo@abdnh.net" }]
 description = "A collection of utilties for Anki add-on development"
 readme = "README.md"
 requires-python = ">=3.9"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
-]
+classifiers = ["Programming Language :: Python :: 3"]
+license = "AGPL-3.0-or-later"
 dynamic = ["version"]
 dependencies = [
     "sentry-sdk",
