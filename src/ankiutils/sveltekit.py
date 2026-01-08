@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import mimetypes
 import os
+import secrets
 import threading
 import traceback
 from http import HTTPStatus
 from typing import TYPE_CHECKING, Any, Callable
 
 import flask
-from flask import request
+from flask import abort, request
 from structlog.stdlib import BoundLogger
 from typing_extensions import TypeAlias
 from waitress.server import create_server
@@ -46,6 +47,16 @@ def get_api_host(consts: AddonConsts) -> str:
 
 def get_api_port(consts: AddonConsts) -> int:
     return int(get_addon_env_var(consts, "API_PORT", "0"))
+
+
+_APIKEY = secrets.token_urlsafe(32)
+
+
+def _have_api_access(consts: AddonConsts) -> bool:
+    return (
+        request.headers.get("Authorization") == f"Bearer {_APIKEY}"
+        or get_api_host(consts) == "0.0.0.0"
+    )
 
 
 class SveltekitServerError(Exception):
@@ -110,6 +121,10 @@ class SveltekitServer(threading.Thread):
         self.proto_handlers_for_dialog.pop(dialog_id, None)
 
     def _handle_api_request(self, service: str, method: str) -> flask.Response:
+        if not _have_api_access(self.consts):
+            self.logger.warning("Unexpected API access", headers=request.headers)
+            return abort(HTTPStatus.FORBIDDEN)
+
         dialog_id: str | None = request.headers.get("qt-widget-id", None)
         handler: ProtoHandler | None = None
         if dialog_id:

@@ -5,14 +5,50 @@ import urllib
 import urllib.parse
 from typing import Any
 
-from aqt.qt import Qt, QUrl, QVBoxLayout, QWidget, qconnect
+from aqt.qt import (
+    QObject,
+    Qt,
+    QUrl,
+    QVBoxLayout,
+    QWebEngineProfile,
+    QWebEngineUrlRequestInfo,
+    QWebEngineUrlRequestInterceptor,
+    QWidget,
+    qconnect,
+)
 from aqt.theme import theme_manager
 from aqt.webview import AnkiWebView
 from structlog.stdlib import BoundLogger
 
 from ..consts import AddonConsts
-from ..sveltekit import SveltekitServer, is_hmr_enabled
+from ..sveltekit import _APIKEY, SveltekitServer, get_api_host, is_hmr_enabled
 from .dialog import Dialog
+
+profile_with_api_access: QWebEngineProfile | None = None
+
+
+class AuthInterceptor(QWebEngineUrlRequestInterceptor):
+    def __init__(self, consts: AddonConsts, parent: QObject | None = None):
+        super().__init__(parent)
+        self.consts = consts
+
+    def interceptRequest(self, info: QWebEngineUrlRequestInfo) -> None:
+        if info.requestUrl().host() == get_api_host(self.consts):
+            info.setHttpHeader(b"Authorization", f"Bearer {_APIKEY}".encode())
+
+
+class SvelteWebView(AnkiWebView):
+    def __init__(self, parent: QWidget, title: str, consts: AddonConsts):
+        super().__init__(parent, title)
+        self.consts = consts
+
+        global profile_with_api_access
+        profile = profile_with_api_access
+        if not profile:
+            profile = QWebEngineProfile()
+            interceptor = AuthInterceptor(consts, profile)
+            profile.setUrlRequestInterceptor(interceptor)
+            profile_with_api_access = profile
 
 
 class SveltekitWebDialog(Dialog):
@@ -28,7 +64,7 @@ class SveltekitWebDialog(Dialog):
         flags: Qt.WindowType = Qt.WindowType.Window,
         subtitle: str = "",
     ):
-        self.web: AnkiWebView
+        self.web: SvelteWebView
         self.consts = consts
         self.logger = logger
         self.server = server
@@ -43,7 +79,7 @@ class SveltekitWebDialog(Dialog):
         title = self.consts.name
         if self.subtitle:
             title += f" - {self.subtitle}"
-        self.web = AnkiWebView(self, title)
+        self.web = SvelteWebView(self, title, self.consts)
         self.web.set_title(title)
         layout.addWidget(self.web)
         self.web.set_bridge_command(self.on_bridge_command, self)
