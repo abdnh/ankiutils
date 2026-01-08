@@ -32,9 +32,7 @@ class SveltekitWebDialog(Dialog):
         self.logger = logger
         self.server = server
         self.path = path
-        super().__init__(
-            consts=consts, parent=parent, flags=Qt.WindowType.Window, subtitle=subtitle
-        )
+        super().__init__(consts=consts, parent=parent, flags=flags, subtitle=subtitle)
 
     def setup_ui(self) -> None:
         qconnect(self.finished, self._cleanup)
