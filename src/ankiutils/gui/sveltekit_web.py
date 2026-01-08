@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import urllib
 import urllib.parse
 from typing import Any
@@ -32,6 +33,7 @@ class SveltekitWebDialog(Dialog):
         self.logger = logger
         self.server = server
         self.path = path
+        self.use_standard_anki_styling = False
         super().__init__(consts=consts, parent=parent, flags=flags, subtitle=subtitle)
 
     def setup_ui(self) -> None:
@@ -67,19 +69,25 @@ class SveltekitWebDialog(Dialog):
             server = self.server.get_url()
         query_string = urllib.parse.urlencode(self.get_query_params())
         self.web.load_url(QUrl(f"{server}/{self.path}?{query_string}{extra}"))
-        funcs = [
-            "add_dynamic_styling_and_props_then_show",
-            "add_dynamic_css_and_classes_then_show",
-            "inject_dynamic_style_and_show",
-        ]
-        for func in funcs:
-            try:
-                getattr(self.web, func)()
-            except AttributeError:
-                continue
-            else:
-                return
-        self.web.show()
+        if self.use_standard_anki_styling:
+            funcs = [
+                "add_dynamic_styling_and_props_then_show",
+                "add_dynamic_css_and_classes_then_show",
+                "inject_dynamic_style_and_show",
+            ]
+            for func in funcs:
+                try:
+                    getattr(self.web, func)()
+                except AttributeError:
+                    continue
+                else:
+                    return
+        else:
+            body_classes = theme_manager.body_class().split(" ")
+            self.web.evalWithCallback(
+                f"document.body.classList.add(...{json.dumps(body_classes)})",
+                lambda _: self.web.show(),
+            )
 
     def _cleanup(self) -> None:
         self.server.remove_proto_handlers_for_dialog(self)
