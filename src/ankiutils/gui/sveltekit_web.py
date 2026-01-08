@@ -3,13 +3,15 @@ from __future__ import annotations
 import json
 import urllib
 import urllib.parse
-from typing import Any
+from typing import Any, Callable
 
+from anki.utils import pointVersion
 from aqt.qt import (
     QObject,
     Qt,
     QUrl,
     QVBoxLayout,
+    QWebEnginePage,
     QWebEngineProfile,
     QWebEngineUrlRequestInfo,
     QWebEngineUrlRequestInterceptor,
@@ -17,7 +19,7 @@ from aqt.qt import (
     qconnect,
 )
 from aqt.theme import theme_manager
-from aqt.webview import AnkiWebView
+from aqt.webview import AnkiWebPage, AnkiWebView
 from structlog.stdlib import BoundLogger
 
 from ..consts import AddonConsts
@@ -37,18 +39,28 @@ class AuthInterceptor(QWebEngineUrlRequestInterceptor):
             info.setHttpHeader(b"Authorization", f"Bearer {_APIKEY}".encode())
 
 
-class SvelteWebView(AnkiWebView):
-    def __init__(self, parent: QWidget, title: str, consts: AddonConsts):
-        super().__init__(parent, title)
+class SvelteWebPage(AnkiWebPage):
+    def __init__(
+        self, on_bridge_cmd: Callable[[str], Any], parent: QObject, consts: AddonConsts
+    ):
         self.consts = consts
-
         global profile_with_api_access
         profile = profile_with_api_access
         if not profile:
             profile = QWebEngineProfile()
-            interceptor = AuthInterceptor(consts, profile)
+            interceptor = AuthInterceptor(self.consts, profile)
             profile.setUrlRequestInterceptor(interceptor)
             profile_with_api_access = profile
+
+        if pointVersion() >= 250204:
+            from aqt.webview import AnkiWebViewKind, _bridge_script  # noqa: PLC0415
+
+            self._inject_user_script(profile, _bridge_script)
+            self._kind = AnkiWebViewKind.DEFAULT
+
+        self._onBridgeCmd = on_bridge_cmd
+        QWebEnginePage.__init__(self, profile, parent)
+        self._setupBridge()
 
 
 class SveltekitWebDialog(Dialog):
@@ -64,7 +76,7 @@ class SveltekitWebDialog(Dialog):
         flags: Qt.WindowType = Qt.WindowType.Window,
         subtitle: str = "",
     ):
-        self.web: SvelteWebView
+        self.web: AnkiWebView
         self.consts = consts
         self.logger = logger
         self.server = server
@@ -79,7 +91,8 @@ class SveltekitWebDialog(Dialog):
         title = self.consts.name
         if self.subtitle:
             title += f" - {self.subtitle}"
-        self.web = SvelteWebView(self, title, self.consts)
+        self.web = AnkiWebView(self, title)
+        self.web.setPage(SvelteWebPage(self.web._onBridgeCmd, self.web, self.consts))
         self.web.set_title(title)
         layout.addWidget(self.web)
         self.web.set_bridge_command(self.on_bridge_command, self)
