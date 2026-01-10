@@ -11,6 +11,7 @@ from aqt.qt import (
     Qt,
     QUrl,
     QVBoxLayout,
+    QWebEngineNewWindowRequest,
     QWebEnginePage,
     QWebEngineProfile,
     QWebEngineUrlRequestInfo,
@@ -19,6 +20,7 @@ from aqt.qt import (
     qconnect,
 )
 from aqt.theme import theme_manager
+from aqt.utils import openLink
 from aqt.webview import AnkiWebPage, AnkiWebView
 from structlog.stdlib import BoundLogger
 
@@ -61,6 +63,13 @@ class SvelteWebPage(AnkiWebPage):
         self._onBridgeCmd = on_bridge_cmd
         QWebEnginePage.__init__(self, profile, parent)
         self._setupBridge()
+        qconnect(self.newWindowRequested, self.on_new_window_requested)
+
+    def createWindow(self, type: QWebEnginePage.WebWindowType) -> None:
+        return None
+
+    def on_new_window_requested(self, request: QWebEngineNewWindowRequest) -> None:
+        openLink(request.requestedUrl())
 
 
 class SveltekitWebDialog(Dialog):
