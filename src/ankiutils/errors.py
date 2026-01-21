@@ -353,3 +353,18 @@ def upload_logs(args: ErrorReportingArgs) -> LogsUpload | None:
     except Exception as exc:
         _report_exception(exc, args, {})
         return None
+
+
+def upload_logs_in_background(
+    args: ErrorReportingArgs, on_done: Callable[[LogsUpload | None], None] | None = None
+) -> None:
+    from aqt import mw  # noqa: PLC0415
+
+    mw.taskman.with_progress(
+        functools.partial(
+            upload_logs,
+            args,
+        ),
+        on_done=lambda f: on_done(f.result()) if on_done else None,
+        label="Uploading logs...",
+    )
