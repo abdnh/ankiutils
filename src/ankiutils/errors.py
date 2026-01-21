@@ -34,7 +34,7 @@ from .log import log_file_path
 
 
 @dataclasses.dataclass
-class _ErrorReportingArgs:
+class ErrorReportingArgs:
     consts: AddonConsts
     config: Config
     logger: structlog.stdlib.BoundLogger
@@ -51,22 +51,11 @@ DEFAULT_SENTRY_DSN = "https://a60ae1ebef99da387eed46e0fb114ea9@o4507277389201408
 
 
 def setup_error_handler(  # noqa: PLR0913
-    consts: AddonConsts,
-    config: Config,
-    logger: structlog.stdlib.BoundLogger,
+    args: ErrorReportingArgs,
     sentry_dsn: str | None = None,
-    on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
-    on_sentry_scope: Callable[[Scope], None] | None = None,
 ) -> None:
     """Set up centralized exception handling and initialize Sentry."""
 
-    args = _ErrorReportingArgs(
-        consts=consts,
-        config=config,
-        logger=logger,
-        on_handle_exception=on_handle_exception,
-        on_sentry_scope=on_sentry_scope,
-    )
     _setup_excepthook(args)
     _setup_threading_excepthook(args)
     if _error_reporting_enabled(args):
@@ -77,7 +66,7 @@ def register_exception_callback(callback: ExceptionCallback) -> None:
     exception_callbacks.append(callback)
 
 
-def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> None:
+def _initialize_sentry(args: ErrorReportingArgs, dsn: str | None = None) -> None:
     os.environ["SENTRY_RELEASE"] = args.consts.version
 
     sentry_sdk.init(
@@ -102,7 +91,7 @@ def _initialize_sentry(args: _ErrorReportingArgs, dsn: str | None = None) -> Non
     )
 
 
-def _before_send(args: _ErrorReportingArgs, event: Event, hint: Hint) -> Any | None:
+def _before_send(args: ErrorReportingArgs, event: Event, hint: Hint) -> Any | None:
     """Filter out events created by the LoggingIntegration
     that are not related to this add-on."""
     if "log_record" in hint:
@@ -112,7 +101,7 @@ def _before_send(args: _ErrorReportingArgs, event: Event, hint: Hint) -> Any | N
     return event
 
 
-def _before_send_log(args: _ErrorReportingArgs, log: Log, hint: Hint) -> Log | None:
+def _before_send_log(args: ErrorReportingArgs, log: Log, hint: Hint) -> Log | None:
     if "log_record" in hint:
         logger_name = hint["log_record"].name
         if logger_name != args.logger.name:
@@ -120,9 +109,9 @@ def _before_send_log(args: _ErrorReportingArgs, log: Log, hint: Hint) -> Log | N
     return log
 
 
-def _report_exception_and_upload_logs(
+def report_exception_and_upload_logs(
     exception: BaseException,
-    args: _ErrorReportingArgs,
+    args: ErrorReportingArgs,
     context: dict[str, Any] | None = None,
 ) -> str | None:
     """Report the exception to Sentry and upload the logs.
@@ -136,41 +125,22 @@ def _report_exception_and_upload_logs(
     sentry_id = _report_exception(
         exception=exception,
         args=args,
-        context={**context, "logs": dataclasses.asdict(_upload_logs(args))},
+        context={**context, "logs": dataclasses.asdict(upload_logs(args))},
     )
 
     return sentry_id
 
 
-def report_exception_and_upload_logs(
+def report_exception_and_upload_logs_in_background(
     exception: BaseException,
-    consts: AddonConsts,
-    config: Config,
-    logger: structlog.stdlib.BoundLogger,
-    on_sentry_scope: Callable[[Scope], None] | None = None,
-) -> str | None:
-    return _report_exception_and_upload_logs(
-        exception,
-        _ErrorReportingArgs(
-            consts=consts,
-            config=config,
-            logger=logger,
-            on_handle_exception=None,
-            on_sentry_scope=on_sentry_scope,
-        ),
-    )
-
-
-def _report_exception_and_upload_logs_in_background(
-    exception: BaseException,
-    args: _ErrorReportingArgs,
+    args: ErrorReportingArgs,
     on_done: Callable[[str | None], None] | None = None,
 ) -> None:
     from aqt import mw  # noqa: PLC0415
 
     mw.taskman.with_progress(
         functools.partial(
-            _report_exception_and_upload_logs,
+            report_exception_and_upload_logs,
             exception,
             args,
         ),
@@ -179,28 +149,7 @@ def _report_exception_and_upload_logs_in_background(
     )
 
 
-def report_exception_and_upload_logs_in_background(
-    exception: BaseException,
-    consts: AddonConsts,
-    config: Config,
-    logger: structlog.stdlib.BoundLogger,
-    on_sentry_scope: Callable[[Scope], None] | None = None,
-    on_done: Callable[[str | None], None] | None = None,
-) -> None:
-    _report_exception_and_upload_logs_in_background(
-        exception,
-        _ErrorReportingArgs(
-            consts=consts,
-            config=config,
-            logger=logger,
-            on_handle_exception=None,
-            on_sentry_scope=on_sentry_scope,
-        ),
-        on_done=on_done,
-    )
-
-
-def _setup_excepthook(args: _ErrorReportingArgs) -> None:
+def _setup_excepthook(args: ErrorReportingArgs) -> None:
     """Set up centralized exception handling.
     Exceptions are are either handled by our exception handler
     or passed to the original excepthook which opens Anki's error dialog.
@@ -245,7 +194,7 @@ def _setup_excepthook(args: _ErrorReportingArgs) -> None:
     sys.excepthook = excepthook
 
 
-def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
+def _setup_threading_excepthook(args: ErrorReportingArgs) -> None:
     """Set up a threading excepthook.
     This is used to report exceptions from threads.
     """
@@ -295,9 +244,7 @@ def _setup_threading_excepthook(args: _ErrorReportingArgs) -> None:
     threading.excepthook = excepthook
 
 
-def _maybe_report_exception(
-    exception: BaseException, args: _ErrorReportingArgs
-) -> None:
+def _maybe_report_exception(exception: BaseException, args: ErrorReportingArgs) -> None:
     def on_done(sentry_event_id: str | None) -> None:
         # TODO: maybe set our own error dialog here
         if args.on_handle_exception:
@@ -307,13 +254,13 @@ def _maybe_report_exception(
                 functools.partial(args.on_handle_exception, exception, sentry_event_id)
             )
 
-    _report_exception_and_upload_logs_in_background(
+    report_exception_and_upload_logs_in_background(
         exception=exception, args=args, on_done=on_done
     )
 
 
 def _try_handle_exception(
-    args: _ErrorReportingArgs,
+    args: ErrorReportingArgs,
     exc_type: type[BaseException],
     exc_value: BaseException,
     tb: TracebackType | None,
@@ -332,19 +279,19 @@ def _try_handle_exception(
     return False
 
 
-def _this_addon_mentioned_in_tb(tb: TracebackType, args: _ErrorReportingArgs) -> bool:
+def _this_addon_mentioned_in_tb(tb: TracebackType, args: ErrorReportingArgs) -> bool:
     tb_str = "".join(traceback.format_tb(tb))
     result = _contains_path_to_this_addon(tb_str, args)
     return result
 
 
-def _contains_path_to_this_addon(tb_str: str, args: _ErrorReportingArgs) -> bool:
+def _contains_path_to_this_addon(tb_str: str, args: ErrorReportingArgs) -> bool:
     return bool(re.search(rf"(/|\\)addons21(/|\\){args.consts.module}(/|\\)", tb_str))
 
 
 def _report_exception(
     exception: BaseException,
-    args: _ErrorReportingArgs,
+    args: ErrorReportingArgs,
     context: dict[str, dict[str, Any]],
 ) -> str | None:
     """Report an exception to Sentry."""
@@ -378,7 +325,7 @@ def _report_exception(
     return sentry_id
 
 
-def _error_reporting_enabled(args: _ErrorReportingArgs) -> bool:
+def _error_reporting_enabled(args: ErrorReportingArgs) -> bool:
     return (
         args.config.get("report_errors") and not os.getenv("REPORT_ERRORS", None) == "0"
     )
@@ -390,7 +337,8 @@ class LogsUpload:
     filename: str
 
 
-def _upload_logs(args: _ErrorReportingArgs) -> LogsUpload | None:
+def upload_logs(args: ErrorReportingArgs) -> LogsUpload | None:
+    """Upload add-on logs and return `LogsUpload` (containing `url` and `filename`)"""
     addon = args.consts.module
     if not log_file_path(addon).exists():
         return None
@@ -405,21 +353,3 @@ def _upload_logs(args: _ErrorReportingArgs) -> LogsUpload | None:
     except Exception as exc:
         _report_exception(exc, args, {})
         return None
-
-
-def upload_logs(
-    consts: AddonConsts,
-    config: Config,
-    logger: structlog.stdlib.BoundLogger,
-    on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
-    on_sentry_scope: Callable[[Scope], None] | None = None,
-) -> LogsUpload | None:
-    args = _ErrorReportingArgs(
-        consts=consts,
-        config=config,
-        logger=logger,
-        on_handle_exception=on_handle_exception,
-        on_sentry_scope=on_sentry_scope,
-    )
-
-    return _upload_logs(args)
