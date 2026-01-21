@@ -136,7 +136,7 @@ def _report_exception_and_upload_logs(
     sentry_id = _report_exception(
         exception=exception,
         args=args,
-        context={**context, "logs": _upload_logs(args)},
+        context={**context, "logs": dataclasses.asdict(_upload_logs(args))},
     )
 
     return sentry_id
@@ -384,7 +384,13 @@ def _error_reporting_enabled(args: _ErrorReportingArgs) -> bool:
     )
 
 
-def _upload_logs(args: _ErrorReportingArgs) -> dict[str, str] | None:
+@dataclasses.dataclass
+class LogsUpload:
+    url: str
+    filename: str
+
+
+def _upload_logs(args: _ErrorReportingArgs) -> LogsUpload | None:
     addon = args.consts.module
     if not log_file_path(addon).exists():
         return None
@@ -395,7 +401,25 @@ def _upload_logs(args: _ErrorReportingArgs) -> dict[str, str] | None:
     path = log_file_path(addon)
     name = f"{addon}_{checksum(path.read_text(encoding='utf-8'))}.log"
     try:
-        return {"url": upload_file(path, name), "filename": name}
+        return LogsUpload(url=upload_file(path, name), filename=name)
     except Exception as exc:
         _report_exception(exc, args, {})
         return None
+
+
+def upload_logs(
+    consts: AddonConsts,
+    config: Config,
+    logger: structlog.stdlib.BoundLogger,
+    on_handle_exception: Callable[[BaseException, str | None], None] | None = None,
+    on_sentry_scope: Callable[[Scope], None] | None = None,
+) -> LogsUpload | None:
+    args = _ErrorReportingArgs(
+        consts=consts,
+        config=config,
+        logger=logger,
+        on_handle_exception=on_handle_exception,
+        on_sentry_scope=on_sentry_scope,
+    )
+
+    return _upload_logs(args)
