@@ -7,7 +7,6 @@ Credit: Adapted from the AnkiHub add-on.
 from __future__ import annotations
 
 import dataclasses
-import functools
 import os
 import re
 import sys
@@ -18,7 +17,9 @@ from typing import Any, Callable, Optional
 
 import sentry_sdk
 import structlog
+from anki.collection import Collection
 from anki.utils import checksum, pointVersion
+from aqt.qt import QWidget
 from sentry_sdk import capture_exception, new_scope
 from sentry_sdk.integrations.argv import ArgvIntegration
 from sentry_sdk.integrations.dedupe import DedupeIntegration
@@ -30,6 +31,7 @@ from sentry_sdk.types import Event, Hint, Log
 from .config import Config
 from .consts import AddonConsts
 from .gofile import upload_file
+from .gui.operations import AddonQueryOp
 from .log import log_file_path
 
 
@@ -131,21 +133,23 @@ def report_exception_and_upload_logs(
     return sentry_id
 
 
-def report_exception_and_upload_logs_in_background(
+def report_exception_and_upload_logs_op(
+    parent: QWidget,
     exception: BaseException,
     args: ErrorReportingArgs,
-    on_done: Callable[[str | None], None] | None = None,
-) -> None:
-    from aqt import mw  # noqa: PLC0415
+    on_success: Callable[[str | None], None] | None = None,
+) -> AddonQueryOp[str | None]:
+    def op(_: Collection) -> str | None:
+        return report_exception_and_upload_logs(exception, args)
 
-    mw.taskman.with_progress(
-        functools.partial(
-            report_exception_and_upload_logs,
-            exception,
-            args,
-        ),
-        on_done=lambda f: on_done(f.result()) if on_done else None,
-        label="Reporting error...",
+    def wrapped_on_success(result: str | None) -> None:
+        if on_success:
+            on_success(result)
+
+    return (
+        AddonQueryOp(parent=parent, op=op, success=wrapped_on_success)
+        .without_collection()
+        .with_progress("Reporting error...")
     )
 
 
@@ -245,18 +249,16 @@ def _setup_threading_excepthook(args: ErrorReportingArgs) -> None:
 
 
 def _maybe_report_exception(exception: BaseException, args: ErrorReportingArgs) -> None:
-    def on_done(sentry_event_id: str | None) -> None:
+    from aqt import mw  # noqa: PLC0415
+
+    def on_success(sentry_event_id: str | None) -> None:
         # TODO: maybe set our own error dialog here
         if args.on_handle_exception:
-            from aqt import mw  # noqa: PLC0415
+            args.on_handle_exception(exception, sentry_event_id)
 
-            mw.taskman.run_on_main(
-                functools.partial(args.on_handle_exception, exception, sentry_event_id)
-            )
-
-    report_exception_and_upload_logs_in_background(
-        exception=exception, args=args, on_done=on_done
-    )
+    report_exception_and_upload_logs_op(
+        parent=mw, exception=exception, args=args, on_success=on_success
+    ).run_in_background()
 
 
 def _try_handle_exception(
@@ -355,16 +357,18 @@ def upload_logs(args: ErrorReportingArgs) -> LogsUpload | None:
         return None
 
 
-def upload_logs_in_background(
-    args: ErrorReportingArgs, on_done: Callable[[LogsUpload | None], None] | None = None
-) -> None:
-    from aqt import mw  # noqa: PLC0415
+def upload_logs_op(
+    parent: QWidget,
+    args: ErrorReportingArgs,
+    on_success: Callable[[LogsUpload | None], None] | None = None,
+) -> AddonQueryOp[LogsUpload | None]:
+    def wrapped_on_success(result: LogsUpload | None) -> None:
+        if on_success:
+            on_success(result)
 
-    mw.taskman.with_progress(
-        functools.partial(
-            upload_logs,
-            args,
-        ),
-        on_done=lambda f: on_done(f.result()) if on_done else None,
-        label="Uploading logs...",
+    def op(_: Collection) -> LogsUpload | None:
+        return upload_logs(args)
+
+    return AddonQueryOp(parent=parent, op=op, success=wrapped_on_success).with_progress(
+        "Uploading logs..."
     )
