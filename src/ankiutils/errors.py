@@ -38,8 +38,8 @@ class ErrorReportingArgs:
     consts: AddonConsts
     config: Config
     logger: structlog.stdlib.BoundLogger
-    on_handle_exception: Callable[[BaseException, str | None], None] | None
-    on_sentry_scope: Callable[[Scope], None] | None
+    on_handle_exception: Callable[[BaseException, str | None], None] | None = None
+    on_sentry_scope: Callable[[Scope], None] | None = None
 
 
 ExceptionCallback = Callable[
