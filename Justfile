@@ -3,18 +3,18 @@ UV_RUN := "uv run --"
 default: lint mypy test
 
 ruff-format:
-  {{UV_RUN}} pre-commit run -a ruff-format
+  {{UV_RUN}} prek run -a ruff-format
 
 ruff-check:
   {{UV_RUN}} ruff check
 
 ruff-fix:
-  {{UV_RUN}} pre-commit run -a ruff-check
+  {{UV_RUN}} prek run -a ruff-check
 
 fix: ruff-format ruff-fix
 
 mypy:
-  {{UV_RUN}} pre-commit run -a mypy
+  {{UV_RUN}} prek run -a mypy
 
 lint: mypy ruff-check
 

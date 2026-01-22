@@ -20,7 +20,7 @@ dependencies = [
 dev = [
     "aqt",
     "mypy",
-    "pre-commit",
+    "prek>=0.3.0",
     "pytest",
     "pytest-cov",
     "ruff",
