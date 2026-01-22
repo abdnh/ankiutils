@@ -14,11 +14,11 @@ def upload_logs_and_notify_user(parent: QWidget, args: ErrorReportingArgs) -> No
             tooltip("Failed to upload logs. Issue has been reported.", parent=parent)
             return
 
-        def callback(_: int) -> None:
-            mw.app.clipboard().setText(upload.filename)
+        mw.app.clipboard().setText(upload.filename)
 
         MessageBox(
-            text=f"Logs uploaded to file {upload.filename}.<br>"
+            text=f"Logs uploaded to file {upload.filename} "
+            "and filename copied to the clipboard.<br>"
             "Please share it using one of the following support channels:<br><br>"
             + "<br>".join(
                 f"<a href='{url}'>{url}</a>"
@@ -27,9 +27,7 @@ def upload_logs_and_notify_user(parent: QWidget, args: ErrorReportingArgs) -> No
             title=args.consts.name,
             parent=parent,
             textFormat=Qt.TextFormat.RichText,
-            buttons=["Copy filename"],
             icon=QMessageBox.Icon.Information,
-            callback=callback,
         )
 
     upload_logs_op(parent=parent, args=args, on_success=on_success).run_in_background()
