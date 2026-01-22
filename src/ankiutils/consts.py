@@ -37,24 +37,15 @@ def read_manifest(addon_dir: Path) -> dict[str, Any]:
 
 
 def _get_manifest_name(manifest: dict[str, Any]) -> str | None:
-    try:
-        return manifest["name"]
-    except Exception:
-        return None
+    return manifest.get("name")
 
 
 def _get_ankiweb_id(manifest: dict[str, Any]) -> str | None:
-    try:
-        return manifest["ankiweb_id"]
-    except Exception:
-        return None
+    return manifest.get("ankiweb_id")
 
 
 def _get_support_channels(manifest: dict[str, Any]) -> dict[str, str]:
-    try:
-        return manifest["support_channels"]
-    except Exception:
-        return {}
+    return manifest.get("support_channels", {})
 
 
 def get_consts(module: str) -> AddonConsts:
