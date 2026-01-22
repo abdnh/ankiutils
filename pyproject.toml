@@ -38,4 +38,4 @@ select = ["E", "F", "I", "UP", "PL", "TRY"]
 ignore = ["PLW0603", "PLR2004"]
 
 [tool.ruff.lint.pylint]
-max-args = 7
+max-args = 9
