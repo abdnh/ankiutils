@@ -73,7 +73,7 @@ class SvelteWebPage(AnkiWebPage):
 
 
 class SveltekitWebDialog(Dialog):
-    default_size = (800, 600)
+    default_size = (800, 800)
 
     def __init__(
         self,
