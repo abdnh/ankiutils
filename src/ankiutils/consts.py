@@ -18,6 +18,7 @@ class AddonConsts:
     version: str
     ankiweb_id: str | None
     support_channels: dict[str, str]
+    docs_page: str | None
 
 
 def _read_version(addon_dir: Path) -> str:
@@ -50,7 +51,9 @@ def _get_support_channels(manifest: dict[str, Any]) -> dict[str, str]:
 
 def get_consts(module: str) -> AddonConsts:
     if is_testing():
-        return AddonConsts("addon", "addon", Path.cwd() / "src", "0.0.1", None, {})
+        return AddonConsts(
+            "addon", "addon", Path.cwd() / "src", "0.0.1", None, {}, None
+        )
     meta = mw.addonManager.addon_meta(mw.addonManager.addonFromModule(module))
     module = meta.dir_name
     addon_dir = Path(mw.addonManager.addonsFolder(module))
@@ -58,6 +61,13 @@ def get_consts(module: str) -> AddonConsts:
     name = _get_manifest_name(manifest) or meta.human_name()
     ankiweb_id = _get_ankiweb_id(manifest)
     support_channels = _get_support_channels(manifest)
+    docs_page = manifest.get("docs_page")
     return AddonConsts(
-        name, module, addon_dir, _read_version(addon_dir), ankiweb_id, support_channels
+        name,
+        module,
+        addon_dir,
+        _read_version(addon_dir),
+        ankiweb_id,
+        support_channels,
+        docs_page,
     )
