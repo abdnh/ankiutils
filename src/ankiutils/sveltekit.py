@@ -68,6 +68,11 @@ class SveltekitServerNotInitializedError(SveltekitServerError):
         super().__init__("Sveltekit server is not initialized")
 
 
+class SveltekitServerPageAlreadyRegisteredError(SveltekitServerError):
+    def __init__(self, path: str):
+        super().__init__(f'Page "{path}" is already registered')
+
+
 ProtoHandler: TypeAlias = Callable[[bytes], bytes]
 
 
@@ -85,7 +90,13 @@ class SveltekitServer(threading.Thread):
         self.proto_handlers_for_dialog: dict[
             int, dict[tuple[str, str], Callable[[bytes], bytes]]
         ] = {}
+        self.page_paths: set[str] = set()
         self._register_routes()
+
+    def register_page(self, path: str) -> None:
+        if path in self.page_paths:
+            raise SveltekitServerPageAlreadyRegisteredError(path=path)
+        self.page_paths.add(path)
 
     def _register_routes(self) -> None:
         self.flask_app.add_url_rule(
@@ -150,7 +161,7 @@ class SveltekitServer(threading.Thread):
 
     def _handle_sveltekit_request(self, path: str) -> flask.Response:
         immutable = "immutable" in path
-        if not immutable:
+        if not immutable and path in self.page_paths:
             path = "index.html"
         mimetype, _encoding = mimetypes.guess_type(path)
         if not mimetype:

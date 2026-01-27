@@ -91,6 +91,7 @@ class SveltekitWebDialog(Dialog):
         self.server = server
         self.path = path
         self.use_standard_anki_styling = False
+        self.server.register_page(path)
         super().__init__(consts=consts, parent=parent, flags=flags, subtitle=subtitle)
 
     def setup_ui(self) -> None:
