@@ -68,11 +68,6 @@ class SveltekitServerNotInitializedError(SveltekitServerError):
         super().__init__("Sveltekit server is not initialized")
 
 
-class SveltekitServerPageAlreadyRegisteredError(SveltekitServerError):
-    def __init__(self, path: str):
-        super().__init__(f'Page "{path}" is already registered')
-
-
 ProtoHandler: TypeAlias = Callable[[bytes], bytes]
 
 
@@ -94,8 +89,6 @@ class SveltekitServer(threading.Thread):
         self._register_routes()
 
     def register_page(self, path: str) -> None:
-        if path in self.page_paths:
-            raise SveltekitServerPageAlreadyRegisteredError(path=path)
         self.page_paths.add(path)
 
     def _register_routes(self) -> None:
