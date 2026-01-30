@@ -124,10 +124,11 @@ def report_exception_and_upload_logs(
 
     if not context:
         context = {}
+    logs = upload_logs(args)
     sentry_id = _report_exception(
         exception=exception,
         args=args,
-        context={**context, "logs": dataclasses.asdict(upload_logs(args))},
+        context={**context, "logs": dataclasses.asdict(logs) if logs else None},
     )
 
     return sentry_id
