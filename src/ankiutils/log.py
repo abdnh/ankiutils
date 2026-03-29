@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from anki.hooks import wrap
 from aqt import mw
 from aqt.addons import AddonManager
 from structlog.processors import CallsiteParameter
@@ -126,6 +125,9 @@ def get_logger(module: str) -> structlog.stdlib.BoundLogger:
             )
         )
         std_logger.addHandler(file_handler)
+
+        from anki.hooks import wrap  # noqa: PLC0415
+
         AddonManager.deleteAddon = wrap(  # type: ignore[method-assign]
             AddonManager.deleteAddon, close_log_file, "before"
         )
